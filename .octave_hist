@@ -1,0 +1,32 @@
+javaObject
+exit
+# Octave 3.6.2, Tue Jan 07 04:06:06 2014 UTC <pi@raspberrypi>
+exit
+# Octave 3.6.2, Tue Jan 07 04:08:10 2014 UTC <pi@raspberrypi>
+exit
+# Octave 3.6.2, Tue Jan 07 04:12:12 2014 UTC <pi@raspberrypi>
+fftshift
+fft
+reshape
+drawnow
+set
+gca
+axis
+clear
+cls
+clc
+subplot
+semilogy
+ls
+exit
+# Octave 3.6.2, Tue Jan 07 05:01:09 2014 UTC <pi@raspberrypi>
+setenv ("PATH", [getenv("JAVA_HOME") '\bin' pathsep getenv("PATH")]) 
+ls
+demo_pSpect_waller1
+demo_pSpect_waller1
+demo_pSpect_waller1
+exit
+# Octave 3.6.2, Tue Jan 07 06:31:44 2014 UTC <pi@raspberrypi>
+3.^2
+exit
+# Octave 3.6.2, Wed Jan 08 00:19:39 2014 UTC <pi@raspberrypi>
