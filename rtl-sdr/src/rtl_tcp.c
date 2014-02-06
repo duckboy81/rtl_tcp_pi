@@ -25,6 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//Quack
+#include <math.h>
+#include <time.h>
+#include <fftw3.h>
+
 #ifndef _WIN32
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -55,13 +60,15 @@ typedef int socklen_t;
 #define SOCKET_ERROR -1
 #endif
 
-//Debug global variable
+//Quack - Debug global variable
 static unsigned int ll_counter = 0;
 
 static SOCKET s;
 
 static pthread_t tcp_worker_thread;
 static pthread_t command_thread;
+static pthread_t ducky_fft_thread;
+
 static pthread_cond_t exit_cond;
 static pthread_mutex_t exit_cond_lock;
 
@@ -146,6 +153,7 @@ static void sighandler(int signum)
 
 void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
+
 	if(!do_exit) {
 		struct llist *rpt = (struct llist*)malloc(sizeof(struct llist));
 		rpt->data = (char*)malloc(len);
@@ -181,7 +189,9 @@ void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
  			if (num_queued > global_numq)
 				printf("\nll+, now %d\n", num_queued);
 			else if (num_queued < global_numq)
-				printf("ll-, now %d\n", num_queued);
+				printf("\nll-, now %d\n", num_queued);
+			else
+				printf("\nll=, now $d\n", num_queued);
 
 			global_numq = num_queued;
 		}
@@ -189,6 +199,86 @@ void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 		pthread_mutex_unlock(&ll_mutex);
 	}
 }
+
+static void *ducky_fft(void *arg)
+{
+	struct llist *curelem, *prev;
+	int bytesleft, bytessent, index;
+	struct timeval tv= {1,0};
+	struct timespec ts;
+	struct timeval tp;
+	fd_set writefds;
+	int r = 0;
+
+	//Sitting here just...
+	while(1) {
+
+        //Ducky: variables for fftw (pulled from fftw3_doc)
+        fftw_complex *in, *out;
+        fftw_plan p;
+        int i, N = 256;
+
+        in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+        out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+        p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_MEASURE);
+
+        //Add some data to the input
+        for(i=0; i<N; i++) {
+            in[i][0] = 0; //Real
+            in[i][1] = 0; //Im
+        } //for()
+
+        in[1][0] = in[N-1][0] = 0.5; //Some more data to input
+
+        fftw_execute(p); /* Repeat as needed */
+
+        for(i=0; i<N; i++) {
+            printf("(%i):\t%f\t::\t%f", i, out[i][0], out[i][1]);
+        } //for()
+
+        fftw_destroy_plan(p);
+        fftw_free(in);
+        fftw_free(out);
+
+
+		printf("Sleeping for 5 seconds\n");
+		usleep(8000000);
+	} //while()
+	return 0;
+
+	while(1) {
+		printf("I be playing all day\n");
+
+		if (do_exit) {
+			pthread_exit(0);
+		} //if()
+
+		pthread_mutex_lock(&ll_mutex);
+		gettimeofday(&tp, NULL);
+		ts.tv_sec = tp.tv_sec + 5;
+		ts.tv_nsec = tp.tv_usec * 1000;
+		r = pthread_cond_timedwait(&cond, &ll_mutex, &ts);
+		if (r == ETIMEDOUT) {
+			pthread_mutex_unlock(&ll_mutex);
+			printf("fft worker condition timeout\n");
+			sighandler(0);
+			pthread_exit(NULL);
+		} //if()
+
+		curelem = ll_buffers;
+		ll_buffers = 0;
+		pthread_mutex_unlock(&ll_mutex);
+
+		printf("Evrrday\n");
+
+#ifdef _WIN32
+		Sleep(3000);
+#else
+		sleep(3);
+#endif
+
+	} //while()
+} //ducky_fft
 
 static void *tcp_worker(void *arg)
 {
@@ -576,14 +666,22 @@ int main(int argc, char **argv)
 
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
 		r = pthread_create(&tcp_worker_thread, &attr, tcp_worker, NULL);
 		r = pthread_create(&command_thread, &attr, command_worker, NULL);
+
+		//Ducky: Added our own FFT
+		r = pthread_create(&ducky_fft_thread, &attr, ducky_fft, NULL);
+
 		pthread_attr_destroy(&attr);
 
 		r = rtlsdr_read_async(dev, rtlsdr_callback, NULL, buf_num, 0);
 
 		pthread_join(tcp_worker_thread, &status);
 		pthread_join(command_thread, &status);
+
+		//Ducky: Added our own FFT
+		pthread_join(ducky_fft_thread, &status);
 
 		closesocket(s);
 

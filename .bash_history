@@ -1,321 +1,3 @@
-sudo apt-get install octave-java
-run apt-get update
-sudo apt-get update
-sudo nano /etc/network/interfaces
-reboot now
-sudo reboot
-sudo octave
-cd rtlsdr_matlab/
-nano import.m 
-javac import java.net.io
-ls
-javac data_reader.java
-cat data_reader.java
-cat rtl_sdr_connect.m 
-javac rtl_sdr_connect.m
-java rtl_sdr_connect
-java rtl_sdr_connect.m
-cp
-cp rtl_sdr_connect.m rtl_sdr_connect.java
-java rtl_sdr_connect.java
-javac rtl_sdr_connect.java
-rm rtl_sdr_connect.java 
-nano HelloWorld.java
-javac HelloWorld.java
-nano HelloWorld.java
-javac HelloWorld.java
-nano HelloWorld.java
-javac HelloWorld.java
-java HelloWorld
-nano HelloWorld.java
-javac HelloWorld.java
-nano HelloWorld.java
-javac HelloWorld.java
-java HelloWorld
-rm HelloWorld.class 
-rm HelloWorld.java 
-ls
-clear
-ls
-nano import.m 
-cd /usr/bin/
-ls
-cd /usr/bin/ | grep v
-ls /usr/bin/ | grep v
-ls /usr/
-ls /usr/lib/
-ls /usr/lib/ | grep v
-cd /usr/lib/jvm/
-ls
-cd java-7-openjdk-armhf/
-ls
-cd bin
-ls
-cd java
-ls
-cd java-rmi.cgi
-cd ..
-ls
-cd jre
-ls
-cd bin
-ls
-cd ..
-cd lib
-ls
-sudo find /usr/lib/jvm/java-7-openjdk-armhf/
-sudo find /usr/lib/jvm/java-7-openjdk-armhf/ -name java.net
-sudo find /usr/lib/jvm/ -name java.net
-sudo find /usr/lib/jvm/ -name .Socket
-sudo find /usr/lib/jvm/ -name Socket
-sudo find /usr/lib/jvm/ -name io
-sudo find /usr/lib/jvm/ -name pack
-find /usr/lib/jvm/ -name pack
-find /usr/lib/jvm/ -name jre
-find /usr/lib/jvm/ -name jar
-cd ../..
-cd bin/jar
-cd bin
-ls
-jar
-exit
-sudo apt-get install octave-java
-octave
-sudo apt-get install cmake
-cd rtl-sdr/
-mkdir build
-sudo mkdir build
-cd build/
-cmake ../
-sudo cmake ../
-sudo apt-get install libusb-1.0
-sudo cmake ../
-make
-sudo make
-sudo make install
-sudo ldconfig
-ls
-cd src
-ls
-cd ../../
-ls
-cd ../
-ls
-cd rtl-sdr
-ls
-cd ../
-ls
-cd rtlsdr-matlab
-cd rtlsdr_matlab
-kls
-;s
-ls
-cd ../
-ls
-cd rtl-sdr
-ls
-cd src
-ls
-ls -lrt
-cd ../../
-ls
-cd rtl-sdr
-cd ../
-cd rtlsdr_matlab/
-ls
-nano demo_pSpect_tru1.m
-ls
-nano demo_pSpect.m
-help copy
-help cpy
-help chmod
-info chmod
-clc
-clear
-info copy
-clear
-info chdir
-cpy
-cp
-copy
-ls
-nano demo_pSpect.m 
-nano demo_pSpect_waller.m 
-nano demo_pSpect_waller1.m 
-sudo octave
-raspi-config
-sudo raspi-config
-clear
-nano import.m 
-cd ..
-cd rtl-sdr/
-CD ..
-cd ..
-cd rtlsdr_matlab/
-ls
-nano demo_pSpect_waller1.m
-ls
-nano rtl_sdr_connect.m 
-nano demo_pSpect_waller1.m
-ls
-nano import.m
-cd rtl-sdr/
-git clone git://git.osmocon.org/rtl-sdr.git
-sudo git clone git://git.osmocon.org/rtl-sdr.git
-sudo git clone git://git.osmocom.org/rtl-sdr.git
-ls
-cd rtl-sdr/
-autoreconf -i
-apt-cache show autotools
-apt-cache search autotools
-clear
-cd ..
-octave
-ls
-cd /home/pi/
-mkdir rtlsdr_matlab
-ls
-cd rtlsdr_matlab/
-ls
-cd ..
-octave
-sudo octave
-cd rtlsdr_matlab/
-ls
-sudo octave
-cat loadFile.m 
-nano test_sample.bin
-sudo octave
-cd ..
-ls
-cd rtlsdr_matlab/
-cd ..
-cd rtl_
-cd rtl-sdr/
-rtl_tcp -s 2000000 -f 65500000
-sudo rtl_tcp -s 2000000 -f 65500000
-&sudo rtl_tcp -s 2000000 -f 65500000
-sudo rtl_tcp -s 2000000 -f 65500000&
-sudo rtl_tcp -s 2000000 -f 65500000 &
-fg
-%
-sudo rtl_tcp -s 2000000 -f 65500000 &
-fg
-sudo rtl_tcp -s 2000000 -f 65500000
-bg
-sudo rtl_tcp -s 2000000 -f 65500000
-bg
-octave
-cd ..
-cd rtlsdr_matlab/
-sudo octave
-javac import
-sudo octave
-ls
-nano import.m
-sudo octave
-ls
-cat rtl_sdr_connect.m 
-sudo octave
-nano import.m 
-sudo octave
-setenv ("PATH", [ getenv("JAVA_HOME"), filesep, "bin", pathsep, getenv("PATH") ])
-setenv PATH $ JAVA_HOME /bin:$PATH
-setenv PATH=$ JAVA_HOME /bin:$PATH
-setenv ("PATH", =$ JAVA_HOME /bin:$PATH)
-setenv ("PATH", $ JAVA_HOME /bin:$PATH)
-setenv ("PATH", [getenv("JAVA_HOME") '\bin' pathsep getenv("PATH")]) 
-octave
-ls
-mv import.m import.m.old
-ls
-sudo shutdown now
-sudo octave
-ls
-cd matlab_rtlsdr/
-ls
-nano rtl_sdr_connect.m 
-mv rtl_sdr_connect.m.oldJava
-mv rtl_sdr_connect.m zOld_rtl_sdr_connect.m
-copy zOld_rtl_sdr_connect.m rtl_sdr_connect.m
-ls
-cp zOld_rtl_sdr_connect.m rtl_sdr_connect.m
-copy
-international
-nano rtl_sdr_connect.m 
-ls
-mv rtlsdr_matlab/ matlab_rtlsdr/
-ls
-cd matlab_rtlsdr/
-apt-get install liboctave-dev
-sudo apt-get install liboctave-dev
-copy
-sudo nano /etc/default/keyboard 
-raspi-configu
-sudo raspi-config
-sudo reboot
-copy
-sudo shutdown now
-bg
-rtl_tcp -s 2000000 -f 65500000
-sudo rtl_tcp -s 2000000 -f 65500000
-sudo rmmod dvb_usb_rtl28xxu rtl2832
-su
-sudo rtl_tcp -s 2000000 -f 65500000
-sudo rmmod dvb_usb_rt128xxu
-sudo rmmod dvb_usb_rtl28xxu rtl2832 rtl2830
-sudo rtl_tcp -s 2000000 -f 65500000
-bg
-cd matlab_rtlsdr/
-nano rtl_sdr_connect.m 
-nano rtl_sdr_setFreq.m ]
-nano rtl_sdr_setFreq.m
-bg
-ls
-clear
-ls
-fg
-ls
-g
-bg
-fg
-ls
-cd matlab_rtlsdr/
-sudo octave
-ls
-nano rtl_sdr_connect
-rm rtl_sdr_connect
-ls
-nano rtl_sdr_connect.m 
-bg
-1
-bg 1
-bg &
-bg
-bg --help
-bg 1
-bg
-fg
-fg 1
-bg
-%1
-sudo octave
-sned
-sudo octave
-ls
-cd rtl-sdr/
-ls
-cd ..
-ls
-rtl_tcp
-sudo rtl_tcp –s 2000000 –f 65500000 &
-bg
-list
-fg
-bg
-help bg
-ls
-cd matlab_rtlsdr/
 nano rtl_sdr_
 nano rtl_sdr_connect.m 
 fg 1
@@ -1322,3 +1004,997 @@ sudo nano rtl_sdr_connect_port.m
 sudo nano waller1.m
 sudo nano rtl_sdr_connect_port.m 
 sudo nano waller1.m
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2220
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2230
+jobs -l
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs
+jobs -l
+sudo kill -9 2238
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2261
+cd rtl-sdr/
+ls
+cd src/
+ls
+sudo nano rtl_tcp.c
+cd ..
+cd build/
+cmake ../
+sudo cmake ../
+sudo make
+sudo make install
+sudo ldconfig
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+obs
+jobs
+jobs -l
+sudo kill -9 2426
+sudo cmake ../
+sudo make
+sudo make install
+sudo ldconfig
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2598
+sudo cmake ../
+sudo make
+sudo make install
+sudo ldconfig
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2756
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2969
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 3309
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 3532
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 2752
+sudo kill -9 3752
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 3969
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 4184
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+sudo cmake ..
+sudo cmake ../
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs
+jobs -9
+jobs -l
+sudo kill -9 4778
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+jobs -l
+sudo kill -9 4924
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 0
+sudo rtl_tcp
+sudo rtl_tcp --?
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 0
+sudo rtl_tcp --?
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 4
+exit
+cd matlab_rtlsdr/
+sudo nano waller1.m
+sudo nano rtl_sdr_getData.m 
+sudo nano waller1.m
+sudo nano ~/rtl-sdr/src/rtl_tcp.c 
+fg
+sudo nano ~/rtl-sdr/src/rtl_sdr.c 
+sudo nano ~/rtl-sdr/src/rtl_tcp.c 
+jobs
+fg 2
+clear
+jobs
+sudo nano ~/rtl-sdr/src/CMakeLists.txt 
+sudo nano ~/rtl-sdr/include/
+sudo nano ~/rtl-sdr/include/rtl-sdr.h 
+sudo nano ~/rtl-sdr/include/rtlsdr_i2c.h 
+sudo nano ~/rtl-sdr/rtl-sdr.rules 
+sudo nano ~/rtl-sdr/src/librtlsdr.c 
+jobs
+fg 2
+fg 3
+sudo nano ~/rtl-sdr/src/librtlsdr.c 
+jobs
+fg 3
+jobs
+fg
+sudo nano ~/rtl-sdr/src/rtl_tcp.c 
+sudo top
+jobs
+fg
+sudo nano waller1.m
+exit
+jobs
+fg
+exit
+ls
+cd matlab_rtlsdr/
+sudo octave
+jobs
+sudo jobs
+sudo top
+sudo octave
+cd ../rtl-sdr/
+cd src/
+sudo nano rtl_tcp.c 
+sudo octave
+cs ~/matlab_rtlsdr/
+cd ~/matlab_rtlsdr/
+sudo octave
+fg
+sudo octave
+sudo shutdown now
+cd rtl-sdr/src/
+ls
+sudo nano rtl_tcp.c 
+cd ../ma
+cd ../../matlab_rtlsdr/
+sudo nano waller1.m
+cd ../rtl-sdr/
+sudo nano rtl_tcp.c 
+cd src/
+sudo naon rtl_tcp.c 
+sudo nano rtl_tcp.c 
+cd ../build/
+sudo make
+sudo make install
+sudo make
+sudo make install
+sudo make
+sudo make install
+cd ~/matlab_rtlsdr/
+sudo nano ducky1.m 
+sudo nano waller1.m
+sudo octave
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 4
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 200
+sudo rtl_tcp -s 2000 -f 441000000 -a 0.0.0.0 -n 200
+cd matlab_rtlsdr/
+cd ..
+cd rtl-sdr/
+cd src/
+sudo nano rtl_tcp.c 
+cd ..
+cd build/
+sudo make
+sudo make install
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 200
+sudo top
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -s 2000000 -f 65000000 -a 0.0.0.0 -n 20
+cd matlab_rtlsdr/
+sudo octave
+sudo \shutdown -h now
+cd rtl-sdr/
+ls
+cd sr
+cd src/
+ls
+sudo nano rtl_tcp.c 
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 20
+jobs
+fg
+cd ../..\
+cd ../..
+ls
+octave
+cd ..
+ls
+cat octave/oct.h
+cat /octave/oct.h
+cat ./octave/oct.h
+fg 1
+sudo shutdown -h now
+sudo octave
+sudo shutdown -h now
+ls
+cd matlab_rtlsdr/
+cat ducky1.m 
+cat ducky1.m  |less
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 20kip = 50;
+sudo rtl_tcp -s 2000000 -f 441000000 -a 0.0.0.0 -n 20
+jobs
+jobs -l
+fg
+netcat
+netcat -l 1234
+netcat -l 12345
+clear
+netcat -l 12345
+sudo rtl_tcp -usage
+sudo rtl_tcp -s 2000 -f 441000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -s 2000 -f 441000000 -a 0.0.0.0
+sudo rtl_tcp -s 2000 -f 441000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -sk 2000 -f 441000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -usage -s 2000 -f 441000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -s 2000 -f 441000000 -a 0.0.0.0 -n 20 -b 2
+sudo rtl_tcp -s 200000 -f 441000000 -a 0.0.0.0 -n 20 -b 2
+sudo rtl_tcp -s 200000000 -f 441000000 -a 0.0.0.0 -n 20 -b 2
+sudo rtl_tcp -s 230000 -f 441000000 -a 0.0.0.0 -n 20 -b 2
+sudo rtl_tcp -s 230000 -f 65000000 -a 0.0.0.0 -n 20 -b 2
+sudo rtl_tcp -s 230000 -f 65000000 -a 0.0.0.0 -n 20
+exit
+cd matlab_rtlsdr/
+sudo octave
+cd matlab_rtlsdr/
+sudo nano waller1_notext.m
+sudo top
+clear
+sudo nano waller1_notext.m
+sudo nano waller1.m
+sudo top
+sudo nano waller1_notext.m
+sudo nano waller1.m
+sudo nano waller1_notext.m
+jobs
+fg 2
+jobs
+fg 2
+jobs
+sudo nano ~/rtl-sdr/src/rtl_tcp.c 
+jobs
+fg
+jobs
+fg
+exit
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2237
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -
+jobs -l
+sudo kill -9 2250
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -9
+jobs -l~~
+sudo kill -9 2263
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs - l
+jobs -l
+sudo kill -9 2280
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs
+jobs -l
+sudo kill -9 2288
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2315
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2323
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2330
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo -9 2343
+sudo kill -9 2343
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2357
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2364
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2372
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2379
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2386
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2393
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2400
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2422
+sudo kill -9 2400
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2431
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2438
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2446
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2453
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2461
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2468
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2475
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2482
+rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs
+fuser 1234/tcp
+sudo fuser 1234/tcp
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2502
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+sudo shutdown -h now
+exit
+sudo rtl_tcp -s 910000 -f 65000000 -a 0.0.0.0 -n 20
+jobs -l
+sudo kill -9 2214
+sudo shutdown -h now
+ls
+cat ocr_pi.pn
+cat ocr_pi.png
+ocr_pi.png
+clear
+ls
+cd ..
+ls
+cd pi
+mkdir kiss_fft
+ls
+cd kiss_fft/
+ls
+cat TIPS 
+cat README
+cat README | less
+ls
+mkdir tools
+cd r
+cd ..
+cd r
+cd rtl-sdr/
+ls
+cd build/
+ls
+sudo nano Makefile 
+cd ..
+cd src/
+ls
+cat CMakeLists.txt 
+sudo nano CMakeLists.txt 
+ls
+mv ~/kiss_fft/
+ls ~/kiss_fft/
+mv ~/kiss_fft/tools/ ./
+sudo cp ~/kiss_fft/tools/ ./
+sudo cp ~/kiss_fft/tools/* ./
+ls
+sudo nano rtl_tcp.c 
+sudo shutdown -h now
+ls
+cp ~/kiss_fft/kiss_fft.* ~/rtl-sdr/src/
+sudo cp ~/kiss_fft/kiss_fft.* ~/rtl-sdr/src/
+sudo cp ~/kiss_fft/_kiss_fft_guts.h ~/rtl-sdr/src/
+ls
+cd matlab_rtlsdr
+ls
+cd ../
+ls
+cd resource_drain
+./resource_drain
+shutdown
+sudo shutdown -0 now
+sudo shutdown -0
+sudo shutdown -0 now
+sudo shutdown now
+ls
+./resource_drain
+sudo shutdown -h now
+ls
+./resource_drain
+sudo shutdown -h now
+clear
+ls
+cd kiss_fft/
+ls ../rtl-sdr/
+
+cd ../rtl-sdr/
+cd rt
+cd src/
+sudo nano rtl_tcp.c 
+sudo apt-get install vim-gnome
+sudo vi rtl_tcp.c 
+sudo nano rtl_tcp.c 
+sudo shutdown -h now
+ls
+cd rtl-sdr/
+cd build/
+sudo make
+cd ../src/
+sudo nano rtl_tcp.c 
+ls
+nano CMakeLists.txt 
+ls
+sudo nano CMakeLists.txt 
+ls
+cd ../build/
+ls
+cmake ../
+sudo cmake ../
+sudo make
+cd ..
+cd src/
+nano rtl-tcp.c
+nano rtl_tcp.c 
+sudo nano CMakeLists.txt 
+sudo nano rtl_tcp.c 
+sudo nano CMakeLists.txt 
+sudo nano ../CMakeLists.txt 
+fg
+cd ..
+ls
+sudo nano rtl-sdr.rules 
+ls
+sudo nano librtlsdr.pc.in 
+ls
+sudo nano CMakeLists.txt 
+cd src/
+sudo nano CMakeLists.txt 
+sudo nano rtl_tcp.c \
+sudo nano rtl_tcp.c\
+sudo nano rtl_tcp.c
+ls
+sudo nano CMakeLists.txt 
+sudo nano rtl_tcp.c
+ls
+sudo cp _kiss_fft_guts.h ../include/_kiss_fft_guts.h
+sudo cp kiss_fft.h ../include/kiss_fft.h
+sudo cp kiss_fftr.h ../include/kiss_fftr.h
+sudo nano CMakeLists.txt 
+cd ..
+ls
+cd ..
+ls
+sudo nano NEXT_STEP.txt
+sudo shutdown -h now
+cd rtl-sdr/
+cd build/
+sudo make
+ls
+nano Makefile 
+cd ..
+ls
+nano CMakeLists.txt 
+ls
+ls cmake/
+ls
+nano librtlsdr.pc.in 
+cd ..
+fg
+cd rtl-sdr/
+ls
+sudo rm cmake -f
+sudo rm ./build -f
+sudo rm ./build -d
+sudo rm ./build -s
+cd build/
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+cd rtl-sdr/src/
+ls
+nano kiss_fftr.c
+nano kiss_fftr.h
+ls
+cd ..
+ls
+include/
+ls
+cd include/
+ls
+cd ..
+ls
+cd cmake/
+ls
+cd ..
+ls
+ls m4
+cd m4
+ls
+cd ..
+ls
+cat README
+cd src
+ls
+naon CMakeLists.txt 
+nano CMakeLists.txt 
+cd ..
+ls
+cd build/
+sudo cmake ../
+cd ../kiss_fft/
+ls
+cd ..
+sudo mv kiss_fft/* src/
+ls
+ls kiss_fft/
+rm kiss_fft/
+sudo rm kiss_fft/
+sudo rm kiss_fft/ -f
+sudo rm kiss_fft/ -r
+ls
+cd src
+ls
+cd ../build/
+ls
+sudo cmake ../
+df
+df --total
+ls
+cmake ../
+sudo cmake ../
+sudo nano ../src/
+sudo nano ../src/tuner_e4k.c 
+sudo make
+cd ../src
+gcc kiss_fft.c -o kiss_fft
+sudo gcc kiss_fft.c -o kiss_fft
+sudo gcc kiss_fftr.c -o kiss_fftr
+sudo gcc kiss_fftr.c -c kiss_fftr.o
+sudo gcc -c kiss_fftr.c
+sudo gcc -c kiss_fft.c
+sudo ../build/make
+sudo gcc kiss_fftr.o -o kiss_fftr
+l
+ls
+ls | grep kiss_fftr.h
+sudo nano kiss_fftr.h
+cd ~/
+ls
+ls kiss_fft
+cd rm kiss_fft
+cd rm kiss_fft -r
+rm -r kiss_fft
+ls
+ls kiss_fft130/
+cd kiss_fft130/
+make
+install make kiss_fft.s
+sudo install make kiss_fft.s
+sudo make kiss_fft.s
+sudo make
+sudo make install
+sudo make testall
+ls
+sudo make testall
+gcc
+gcc --help
+gcc -dumpversipon
+gcc -dumpversion
+sudo apt-get update
+sudo apt-get install gcc
+sudo apt-get install gcc-4.8
+ls
+make kiss_fft.c -o
+make kiss_fft.c -o kiss_fft
+gcc kiss_fft.c -o kiss_fft
+sudo make testall
+clear
+cd rtl-sdr/
+cd build/
+sudo cmake ../
+sudo make
+cd ../src/
+ls
+sudo nano kiss_fftr.c
+ls
+ls | grep kiss_fft.h
+sudo nano kiss_fft.h
+ls
+mkdir kiss_fft
+sudo mkdir kiss_fft
+sudo mv kiss_f* kiss_fft/
+sudo mv kiss_fft/ src_kiss_fft/
+ls
+sudo mv _kiss_fft_guts.h src_kiss_fft/
+ls
+ls src_kiss_fft/
+nano kfc.c
+sudo mv kfc.c src_kiss_fft/
+sudo mv kfc.h src_kiss_fft/
+ls
+ls | grep kiss
+cd src_kiss_fft/
+ls
+cd ..
+sudo rm src_kiss_fft/ -r
+ls
+cd ..
+ls
+cd include/
+ls
+sudo rm kiss_fft*
+sudo rm _kiss_fft_guts.h 
+ls
+cd ..
+cd src
+ls /home/pi/rtl-tcp/src
+cd ~
+sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+sudo update-ca-certificates --fresh
+sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O --no-check-certificate /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+sudo wget --no-check-certificates https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+sudo wget --no-check-certificate https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+ls
+df
+df --no-sync 
+ls
+nano --no-check-certificate 
+nano "-no-check-certificate"
+ls
+--no-check-certificate
+./--no-check-certificate
+sudo ./--no-check-certificate
+sudo rpi-update
+cat /etc/ntp.conf
+apt-get install ntpdate
+sudo apt-get install ntpdate
+sudo service ntp restart
+date
+ntpq
+ntpq -q
+ntpq -p
+date
+sudo service ntp stop
+sudo ntpdate -s time.nist.gov
+sudo service ntp start
+date
+service ntp stop
+sudodate
+sudo service ntp stop
+sudo ntpd -gq c /etc/ntp.conf
+sudo ntpd -gq -c /etc/ntp.conf
+date
+sudo date -s "4 FEB 2014 09:18:25"
+date
+sudo rpi-update
+sudo reboot
+sudo shutdown -h now
+sudo reboot
+sudo update-rc.d -f ntp remove
+sudo service ntp stop
+sudo update-rc.d -f ntp remove
+cd /opt/vc/src/hello_pi/hello_fft
+ls
+make
+sudo make
+sudo mknod char_dev c 100 0
+sudo ./hello_fft.bin
+ls
+nano gpu_fft.txt 
+nano hello_fft.c
+cls
+exit
+nano
+exit
+cd rtl-sdr/
+cd src/
+ls
+cd hello_fft/
+ls
+sudo nano hello_fft.c
+usleep(5000)
+usleep
+jobs
+fg
+clear
+sudo nano gpu_fft.txt 
+fg 1
+clear
+fg
+sudo nano ~/rtl-sdr/src/rtl_tcp.c
+sudo nano ~/rtl-sdr/src/CMakeLists.txt 
+sudo nano -ET4 ~/rtl-sdr/src/CMakeLists.txt 
+ls ~/rtl-sdr/src/
+nano ~/rtl-sdr/src/rtl_tcp.c 
+sudo nano -ET4 ~/rtl-sdr/src/CMakeLists.txt 
+jobs
+ls
+exit
+ls
+cd rtl-sdr/
+ls
+cd src/
+sudo nano -ET4 CMakeLists.txt 
+ls
+sudo mv hello_fft/ gpu_fft/
+ls
+fg
+sudo mv hello_fft/ gpu_fft/
+sudo nano -ET4 CMakeLists.txt 
+sudo nano -ET4 rtl_tcp.c 
+fg
+sudo nano -ET4 CMakeLists.txt 
+sudo nano -ET4 gpu_fft/gpu_fft.h
+fg
+cd ../build/
+ls
+cd Cm
+cd CMakeFiles/
+ls
+cd ..
+cd src/
+ls
+cd gpu_fft/
+l
+ls
+cd CMakeFiles/
+ls
+cd ..
+ls
+jobs
+sudo shutdown -h now
+cd rtl-sdr/
+cd build/
+sudo cmake ../
+sudo make
+ls ../src/gpu_fft/
+sudo make
+find
+find -l
+find -h
+find --help
+ld
+ld -l
+ld -help
+ld -I 
+ld -i
+ld -l
+ld -i gpu_fft
+sudo ld -i gpu_fft
+sudo make
+sudo nano ../CMakeLists.txt 
+sudo nano -ET4 ../CMakeLists.txt 
+sudo make
+fg
+sudo make
+sudo cmake ../
+sudo make
+fg
+sudo make
+jobs
+cd rtl-sdr/
+ls
+cd build/
+ls
+sudo cmake
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+sudo cmake ../
+sudo make
+ls ../src/gpu_fft
+ls ../src
+sudo nano ../src/gpu_fft/makefile 
+sudo make
+ls ../src/gpu_fft
+sudo make
+cd ..
+cd cmake/
+ls
+cd Modules/
+ls
+sudo nano -ET4 -u FindGPUfft.cmake
+sudo nano -ET4 -u ../../CMakeLists.txt 
+cd ../../
+cd build/
+sudo nano cmake ../
+sudo cmake ../
+ls ../src/gpu_fft
+rm ../src/gpu_*
+sudo rm ../src/gpu_*
+ls ../src/gpu_fft
+ls ../src
+sudo nano cmake ../
+sudo cmake ../
+ls ../src/gpu_fft
+sudo cmake ../
+sudo make VERBOSE=1
+cd ..
+cd src/
+cd gpu_fft/
+ls
+sudo nano hello_fft.c
+sudo nano gpu_fft.h
+sudo nano gpu_fft.c
+sudo nano mailbox.h
+sudo nano mailbox.c
+sudo nano mailbox.h
+sudo nano makefile
+sudo make
+sudo make clean
+sudo make
+sudo nano makefile
+sudo make
+ls
+sudo nano makefile
+gcc -lrt -lm hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.
+gcc -lrt -lm hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.c
+sudo gcc -lrt -lm hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.c
+ls
+a.out
+./a.out
+sudo gcc hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.c
+sudo gcc -lm hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.c
+sudo gcc -lrt -lm -c hello_fft.c mailbox.c gpu_fft.c gpu_fft_twiddles.c gpu_fft_shaders.c
+ls
+cd ../../build/
+ls
+sudo make VERBOSE=1
+exit
+ls
+cd rtl-sdr/
+ls
+cd src/
+ls
+cat Makefile
+vim Makefile
+ls
+rm Makefile
+sudo rm Makefile
+ls
+vim CMakeLists.txt 
+..
+cd ..
+ls
+vim CMakeLists.txt 
+ls
+cd src/
+ls
+ls gpu_fft/
+ls
+cat rtl_tcp.c 
+vim rtl_tcp.c 
+cp gpu_fft/mailbox.* .
+sudo cp gpu_fft/mailbox.* .
+sudo cp gpu_fft/gpu_fft.h .
+sudo cp gpu_fft/gpu_fft.c .
+ls
+ks
+ls
+sudo nano -ET4 CMakeLists.txt 
+ls
+cd g
+cd gpu_fft/
+ls
+sudo nano -ET4 gpu_fft.h
+ls
+sudo nano -ET4 mailbox.h
+ls
+cd ..
+sudo cp
+sudo cp gpu_fft/*.c *.c
+sudo cp gpu_fft/*.c *.c .
+sudo cp ./gpu_fft/*.c *.c .
+ls
+sudo cp ./gpu_fft/*.h *.h .
+ls
+sudo nano -ET4 CMakeLists.txt 
+cd ..
+sudo nano -ET4 CMakeLists.txt 
+ls
+cd src/
+ls
+sudo nano rtl_tcp.c 
+ls
+sudo nano -ET4 -u CMakeLists.txt 
+ls
+cd ..
+ls
+cd cmake/
+ls
+cd m
+cd Modules/
+s
+ls
+cat FindLibUSB.cmake 
+cd ..
+cd src/
+sudo nano -ET4 -u CMakeLists.txt 
+cd ..
+cd cmake/Modules/
+ls
+sudo mv FindGPUfft.cmake FindGPU_FFT.make
+sudo mv FindGPU_FFT.make FindGPU_FFT.cmake
+jobs
+sudo nano -ET4 -u FindGPU_FFT.cmake 
+sudo nano -ET4 -u FindThreads.cmake 
+sudo nano -ET4 -u FindLibUSB.cmake 
+fg 1
+jobs
+fg 2
+ls
+sudo mv FindGPU_FFT.cmake FindGPU_FFT.cmake.oldme 
+cd ../..
+ls
+jobs
+fg
+jobs
+fg
+ls
+sudo nano -ET4 -u CMakeLists.txt 
+cd src
+ls
+sudo nano CMakeLists.txt 
+sudo nano -ET4 -u rtl_tcp.c 
+sudo nano -ET4 -u gpu_fft/gpu_fft.h
+sudo nano -ET4 -u gpu_fft/gpu_fft.c
+exit
+sudo shutdown -h now

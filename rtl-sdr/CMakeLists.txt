@@ -21,7 +21,8 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
+#Added 2.8 requirement, up from 2.6 Ducky
+cmake_minimum_required(VERSION 2.8)
 project(rtlsdr C)
 
 #select the release build type by default to get optimization flags
@@ -70,13 +71,22 @@ endif()
 if(NOT THREADS_FOUND)
     message(FATAL_ERROR "pthreads(-win32) required to compile rtl-sdr")
 endif()
+
+find_package(FFTW REQUIRED)
+#find_package(GPU_FFT REQUIRED)
+
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
+#include_directories("home/pi/rtl-sdr/src/gpu_fft")
+#link_directories("home/pi/rtl-sdr/src/gpu_fft")
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
     ${LIBUSB_INCLUDE_DIR}
     ${THREADS_PTHREADS_INCLUDE_DIR}
+    ${FFTW_INCLUDES}
+#   ${GPU_FFT_INCLUDES}
 )
 
 #link_directories(
