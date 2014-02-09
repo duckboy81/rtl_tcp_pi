@@ -111,7 +111,7 @@ add_custom_target(uninstall
 ########################################################################
 # Install udev rules
 ########################################################################
-option(INSTALL_UDEV_RULES "Install udev rules for RTL-SDR" OFF)
+option(INSTALL_UDEV_RULES "Install udev rules for RTL-SDR" ON)
 if (INSTALL_UDEV_RULES)
     install (
         FILES rtl-sdr.rules
@@ -122,7 +122,7 @@ else (INSTALL_UDEV_RULES)
     message (STATUS "Udev rules not being installed, install them with -DINSTALL_UDEV_RULES=ON")
 endif (INSTALL_UDEV_RULES)
 
-option(DETACH_KERNEL_DRIVER "Detach kernel driver if loaded" OFF)
+option(DETACH_KERNEL_DRIVER "Detach kernel driver if loaded" ON)
 if (DETACH_KERNEL_DRIVER)
     message (STATUS "Building with kernel driver detaching enabled")
     add_definitions(-DDETACH_KERNEL_DRIVER=1)

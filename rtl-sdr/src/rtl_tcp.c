@@ -33,14 +33,11 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #else
-#include <winsock2.h>
 #include "getopt/getopt.h"
 #endif
 
@@ -48,25 +45,9 @@
 
 #include "rtl-sdr.h"
 
-#ifdef _WIN32
-#pragma comment(lib, "ws2_32.lib")
-
-typedef int socklen_t;
-
-#else
-#define closesocket close
-#define SOCKADDR struct sockaddr
-#define SOCKET int
-#define SOCKET_ERROR -1
-#endif
-
 //Quack - Debug global variable
 static unsigned int ll_counter = 0;
 
-static SOCKET s;
-
-static pthread_t tcp_worker_thread;
-static pthread_t command_thread;
 static pthread_t ducky_fft_thread;
 
 static pthread_cond_t exit_cond;
@@ -76,7 +57,10 @@ static pthread_mutex_t ll_mutex;
 static pthread_cond_t cond;
 
 struct llist {
-	char *data;
+    /*Ducky: Since we're not sending this data over a java application,
+                we should be safe leaving the data as an unsigned char* */
+	//char *data;
+    unsigned char *data;
 	size_t len;
 	struct llist *next;
 };
@@ -89,6 +73,12 @@ typedef struct { /* structure size must be multiple of 2 bytes */
 
 static rtlsdr_dev_t *dev = NULL;
 
+//Ducky: Added to allow "windowing" of resultant ffts
+uint32_t desiredFreqLow = 0;
+uint32_t desiredFreqHigh = 0;
+long unsigned int desiredFFTPoints = (16 * 32 * 512); //This is the def length of each buffer from rtllib
+double calculatedHalfSpan = 0;
+
 int global_numq = 0;
 static struct llist *ll_buffers = 0;
 int llbuf_num=500;
@@ -98,16 +88,24 @@ static volatile int do_exit = 0;
 void usage(void)
 {
 	printf("rtl_tcp, an I/Q spectrum server for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t[-a listen address]\n"
-		"\t[-p listen port (default: 1234)]\n"
+		"Usage:\n"
 		"\t[-f frequency to tune to [Hz]]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-s samplerate in Hz (default: 2048000 Hz)]\n"
 		"\t[-b number of buffers (default: 32, set by library)]\n"
 		"\t[-n max number of linked list buffers to keep (default: 500)]\n"
-		"\t[-d device index (default: 0)]\n");
+		"\t[-d device index (default: 0)]\n"
+        "\t[-x The number of data points to use for each FFT (default: 2^18)]\n"
+        "\t FFTW recommends you set N to one of the following:\n"
+        "\t  -N = 2^a\n"
+        "\t  -N = 3^b\n"
+        "\t  -N = 5^c\n"
+        "\t  -N = 7^d\n"
+        "\t  -N = 11^e || N = 13^f (where e+f is either 0 or 1) \n\t**Not sure what this means, this code will not compare N to this specific rule, so you may still get warnings following this recommendation.\n"
+		"\t[-y Lower bound of FFT window [Hz]\n"
+		"\t[-z Upper bound of FFT window [Hz]\n");
 	exit(1);
-}
+} //usage()
 
 #ifdef _WIN32
 int gettimeofday(struct timeval *tv, void* ignored)
@@ -135,7 +133,7 @@ BOOL WINAPI
 sighandler(int signum)
 {
 	if (CTRL_C_EVENT == signum) {
-		fprintf(stderr, "Signal caught, exiting!\n");
+		fprintf(stdout, "Signal caught, exiting!\n");
 		do_exit = 1;
 		rtlsdr_cancel_async(dev);
 		return TRUE;
@@ -145,21 +143,39 @@ sighandler(int signum)
 #else
 static void sighandler(int signum)
 {
-	fprintf(stderr, "Signal caught, exiting!\n");
+	fprintf(stdout, "Signal caught, exiting!\n");
 	rtlsdr_cancel_async(dev);
-	do_exit = 1;
+	do_exit++;
+
+    if (do_exit == 2) {
+        fprintf(stdout, "Press CTRL+C again to hard close all operations\n");
+    } else if (do_exit == 3) {
+        fprintf(stdout, "\n\nHard exit! GO!\n");
+        exit(0);
+    } //if-else
 }
 #endif
 
 void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
+int i;
 
 	if(!do_exit) {
 		struct llist *rpt = (struct llist*)malloc(sizeof(struct llist));
-		rpt->data = (char*)malloc(len);
+		rpt->data = (unsigned char*)malloc(len);
 		memcpy(rpt->data, buf, len);
 		rpt->len = len;
 		rpt->next = NULL;
+
+/* USED FOR TESTING DATA OUTPUT!
+        FILE *test_fp = fopen("/home/pi/sample_data.txt", "w");
+
+        for(i=0; i<len; i++) {
+            fprintf(test_fp, "%u,", rpt->data[i]);
+        }
+        exit(0);
+        do_exit = 1;
+*/
 
 		pthread_mutex_lock(&ll_mutex);
 
@@ -185,13 +201,12 @@ void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
 			cur->next = rpt;
 
-// TODO: Remove comments
  			if (num_queued > global_numq)
-				printf("\nll+, now %d\n", num_queued);
+				printf("ll+, now %d\n", num_queued);
 			else if (num_queued < global_numq)
-				printf("\nll-, now %d\n", num_queued);
+				printf("ll-, now %d\n", num_queued);
 			else
-				printf("\nll=, now $d\n", num_queued);
+				printf("ll=, now %d\n", num_queued);
 
 			global_numq = num_queued;
 		}
@@ -202,56 +217,84 @@ void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
 static void *ducky_fft(void *arg)
 {
-	struct llist *curelem, *prev;
-	int bytesleft, bytessent, index;
-	struct timeval tv= {1,0};
-	struct timespec ts;
-	struct timeval tp;
-	fd_set writefds;
-	int r = 0;
+    struct llist *curelem, *prev;
+    int bytesleft, bytessent, index;
+    struct timeval tv= {1,0};
+    struct timespec ts;
+    struct timeval tp;
+    fd_set writefds;
+    int r = 0;
 
-	//Sitting here just...
-	while(1) {
+    //Ducky: variables for fftw (pulled from fftw3_doc)
+    fftw_complex *in, *out;
+    fftw_plan p;
+    double curr_output[desiredFFTPoints];
+    long unsigned int i,j, curr_data_point = 0;
 
-        //Ducky: variables for fftw (pulled from fftw3_doc)
-        fftw_complex *in, *out;
-        fftw_plan p;
-        int i, N = 256;
+    //Ducky: Filter results to narrow band
+    uint32_t tunedFreqCenter = rtlsdr_get_center_freq(dev);
+    uint32_t span = rtlsdr_get_sample_rate(dev);
+    uint32_t lowerBound = tunedFreqCenter - span/2;
 
-        in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
-        out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
-        p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_MEASURE);
+    //Calculate upper/lower array bounds
+    //Calculations derived on page 41 of Ducky's notebook
+    //Attempts to add 3% buffer edge to each side
+    long double lower_pos_temp = 0;
+    long double upper_pos_temp = 0;
+    unsigned long int lower_pos = 0;
+    unsigned long int upper_pos = desiredFFTPoints - 1;
 
-        //Add some data to the input
-        for(i=0; i<N; i++) {
-            in[i][0] = 0; //Real
-            in[i][1] = 0; //Im
-        } //for()
+    if (desiredFreqLow != 0) {
+        lower_pos_temp = desiredFreqLow - lowerBound;
+        lower_pos_temp = lower_pos_temp/span;
+        lower_pos_temp = lower_pos_temp * desiredFFTPoints;
+        lower_pos_temp = lower_pos_temp - 0.03*desiredFFTPoints;
 
-        in[1][0] = in[N-1][0] = 0.5; //Some more data to input
+        lower_pos = (unsigned long int) lower_pos_temp;
+    } //if()
 
-        fftw_execute(p); /* Repeat as needed */
+    if (desiredFreqHigh != 0) {
+        upper_pos_temp = desiredFreqHigh - lowerBound;
+        upper_pos_temp = upper_pos_temp/span;
+        upper_pos_temp = upper_pos_temp * desiredFFTPoints;
+        upper_pos_temp = upper_pos_temp + 0.03*desiredFFTPoints;
 
-        for(i=0; i<N; i++) {
-            printf("(%i):\t%f\t::\t%f", i, out[i][0], out[i][1]);
-        } //for()
+        upper_pos = (unsigned long int) upper_pos_temp;
+    } //if()
 
-        fftw_destroy_plan(p);
-        fftw_free(in);
-        fftw_free(out);
+    //Check for out of array
+    if (lower_pos > desiredFFTPoints - 1) {
+        lower_pos = desiredFFTPoints - 1;
+    } //if()
 
+    //Check for out of array
+    if (upper_pos > desiredFFTPoints - 1) {
+        upper_pos = desiredFFTPoints - 1;
+    } //if()
 
-		printf("Sleeping for 5 seconds\n");
-		usleep(8000000);
-	} //while()
-	return 0;
+printf("\nf0: %u\n", tunedFreqCenter);
+printf("span: %u\n", span);
+printf("lower_pos: %lu\n", lower_pos);
+printf("upper_pos: %lu\n", upper_pos);
+printf("desiredFreqP: %lu\n", desiredFFTPoints);
+printf("desiredFreqH: %u\n", desiredFreqHigh);
+printf("desiredFreqL: %u\n\n", desiredFreqLow);
 
-	while(1) {
-		printf("I be playing all day\n");
+//    FILE *sample_file = fopen("/home/pi/sample_data_new.txt", "w");
+    FILE *test_file = fopen("/home/pi/fft_output.txt", "w");
 
-		if (do_exit) {
-			pthread_exit(0);
-		} //if()
+	printf("\nAbout to enter ducky land!\n");
+
+    //Setup fftw
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * desiredFFTPoints);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * desiredFFTPoints);
+    p = fftw_plan_dft_1d(desiredFFTPoints, in, out, FFTW_FORWARD, FFTW_MEASURE);
+
+    while(!do_exit) {
+		//if (do_exit) {
+        //    sighandler(0);
+		//	pthread_exit(NULL);
+		//} //if()
 
 		pthread_mutex_lock(&ll_mutex);
 		gettimeofday(&tp, NULL);
@@ -263,87 +306,111 @@ static void *ducky_fft(void *arg)
 			printf("fft worker condition timeout\n");
 			sighandler(0);
 			pthread_exit(NULL);
-		} //if()
+        } //if()
 
 		curelem = ll_buffers;
 		ll_buffers = 0;
 		pthread_mutex_unlock(&ll_mutex);
 
-		printf("Evrrday\n");
+        while(curelem != 0) {
+            bytesleft = curelem->len;
+            index = 0;
+            bytessent = 0;
 
-#ifdef _WIN32
-		Sleep(3000);
-#else
-		sleep(3);
-#endif
+            //Convert real data to reals and imaginaries and store in array
+            for(j=1; j < curelem->len; j=j+2) {
+                in[curr_data_point][0] = curelem->data[j-1];
+                in[curr_data_point][1] = curelem->data[j];
+                curr_data_point++;
 
+                //For testing -> Print samples to a file
+                //fprintf(sample_file, "%u, %u,", curelem->data[j-1], curelem->data[j]);
+
+                //Is it time to crunch FFTs yet?
+                if (curr_data_point >= desiredFFTPoints) {
+
+                    //Reset variable to reuse it
+                    curr_data_point = 0;
+
+                    //This is a test to see if this function if a blocking function
+                    fprintf(stdout, "\nHello, I'm about to start crunching FFTs!\n");
+                    fftw_execute(p); //Repeat as needed
+                    fprintf(stdout, "I just crunched the ffts!\n");
+
+                    //Need to FFTShift manually!
+                    //Calculate magnitude of results (combine im with real)
+                    //abs() converts values to positive numbers
+                    //sqrt() find the magnitude of the real+complex combined
+                    //pow() helps to pull the signal out of the noise
+                    for(i=desiredFFTPoints/2; i < desiredFFTPoints; i++) {
+                        curr_output[curr_data_point] = pow(
+                                            sqrt(
+                                                abs(out[i][0])
+                                                + abs(out[i][1])
+                                            )
+                                         , 4);
+                        curr_data_point++;
+                    } //for()
+
+                    for(i=0; i < desiredFFTPoints/2; i++) {
+                        curr_output[curr_data_point] = pow(
+                                            sqrt(
+                                                abs(out[i][0])
+                                                + abs(out[i][1])
+                                            )
+                                         , 4);
+                        curr_data_point++;
+                    } //for()
+
+                    //Check window for signal
+                    if (desiredFreqLow != 0 || desiredFreqHigh != 0) {
+                        for(i=lower_pos; i<upper_pos; i++) {
+
+                            //Try out 10^8 as threshold
+                            if (curr_output[i] > 100000000) {
+                                do_exit = 1;
+
+                                fprintf(stdout, "*** I see a signal! ***\n");
+                                fprintf(stdout, "\nPrinting data to file...\n");
+
+                                //For testing -> Print ffts to a file
+                                for(i=0; i < desiredFFTPoints; i++) {
+                                    fprintf(test_file, "%f,", curr_output[i]);
+                                } //for()
+
+                                fprintf(stdout, "...done\n\nGoodbye!");
+
+                                exit(0);
+                            } //if()
+                        } //for()
+                    } //if()
+
+                    //Reset variables
+                    curr_data_point = 0;
+                    //freopen(NULL, "w", sample_file);
+                    //freopen(NULL, "w", test_file);
+
+                } //if()
+            } //for(each data point in buffer)
+
+            prev = curelem;
+            curelem = curelem->next;
+            free(prev->data);
+            free(prev);
+        } //while(we have not reached the end of the buffer)
 	} //while()
+
+//    fclose(sample_file);
+    fclose(test_file);
+
+    fftw_destroy_plan(p);
+    fftw_free(in);
+    fftw_free(out);
+
+    return 0;
+
 } //ducky_fft
 
-static void *tcp_worker(void *arg)
-{
-	struct llist *curelem,*prev;
-	int bytesleft,bytessent, index;
-	struct timeval tv= {1,0};
-	struct timespec ts;
-	struct timeval tp;
-	fd_set writefds;
-	int r = 0;
-
-	while(1) {
-		if(do_exit)
-			pthread_exit(0);
-		pthread_mutex_lock(&ll_mutex);
-		gettimeofday(&tp, NULL);
-		ts.tv_sec  = tp.tv_sec+5;
-		ts.tv_nsec = tp.tv_usec * 1000;
-		r = pthread_cond_timedwait(&cond, &ll_mutex, &ts);
-		if(r == ETIMEDOUT) {
-			pthread_mutex_unlock(&ll_mutex);
-			printf("worker cond timeout\n");
-			sighandler(0);
-			pthread_exit(NULL);
-		}
-
-		curelem = ll_buffers;
-		ll_buffers = 0;
-		pthread_mutex_unlock(&ll_mutex);
-
-		while(curelem != 0) {
-			bytesleft = curelem->len;
-			index = 0;
-			bytessent = 0;
-			while(bytesleft > 0) {
-				FD_ZERO(&writefds);
-				FD_SET(s, &writefds);
-				tv.tv_sec = 1;
-				tv.tv_usec = 0;
-				r = select(s+1, NULL, &writefds, NULL, &tv);
-				if(r) {
-					bytessent = send(s,  &curelem->data[index], bytesleft, 0);
-					bytesleft -= bytessent;
-
-//TODO: Remove this debug code
-					printf("\nLL Counter: %d\n", ll_counter);
-					printf("Bytes sent: %d\n", bytessent);
-					printf("Bytes left: %d\n", bytesleft);
-					ll_counter++;
-
-					index += bytessent;
-				}
-				if(bytessent == SOCKET_ERROR || do_exit) {
-						printf("worker socket bye\n");
-						sighandler(0);
-						pthread_exit(NULL);
-				}
-			}
-			prev = curelem;
-			curelem = curelem->next;
-			free(prev->data);
-			free(prev);
-		}
-	}
-}
 
 static int set_gain_by_index(rtlsdr_dev_t *_dev, unsigned int index)
 {
@@ -363,115 +430,9 @@ static int set_gain_by_index(rtlsdr_dev_t *_dev, unsigned int index)
 	return res;
 }
 
-#ifdef _WIN32
-#define __attribute__(x)
-#pragma pack(push, 1)
-#endif
-struct command{
-	unsigned char cmd;
-	unsigned int param;
-}__attribute__((packed));
-#ifdef _WIN32
-#pragma pack(pop)
-#endif
-static void *command_worker(void *arg)
-{
-	int left, received;
-	fd_set readfds;
-	struct command cmd={0, 0};
-	struct timeval tv= {1, 0};
-	int r = 0;
-	uint32_t tmp;
-
-	while(1) {
-		left=sizeof(cmd);
-		while(left >0) {
-			FD_ZERO(&readfds);
-			FD_SET(s, &readfds);
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-			r = select(s+1, &readfds, NULL, NULL, &tv);
-			if(r) {
-				received = recv(s, (char*)&cmd+(sizeof(cmd)-left), left, 0);
-				left -= received;
-			}
-			if(received == SOCKET_ERROR || do_exit) {
-				printf("comm recv bye\n");
-				sighandler(0);
-				pthread_exit(NULL);
-			}
-		}
-
-		printf("\n%d <== This command was just received\n", cmd.cmd);
-		printf("%d <== This paramater was just rx-ed\n", ntohl(cmd.param));
-
-		switch(cmd.cmd) {
-		default:
-			break;
-
-		case 0x01:
-			printf("set freq %d\n", ntohl(cmd.param));
-			rtlsdr_set_center_freq(dev,ntohl(cmd.param));
-			break;
-		case 0x02:
-			printf("set sample rate %d\n", ntohl(cmd.param));
-			rtlsdr_set_sample_rate(dev, ntohl(cmd.param));
-			break;
-		case 0x03:
-			printf("set gain mode %d\n", ntohl(cmd.param));
-			rtlsdr_set_tuner_gain_mode(dev, ntohl(cmd.param));
-			break;
-		case 0x04:
-			printf("set gain %d\n", ntohl(cmd.param));
-			rtlsdr_set_tuner_gain(dev, ntohl(cmd.param));
-			break;
-		case 0x05:
-			printf("set freq correction %d\n", ntohl(cmd.param));
-			rtlsdr_set_freq_correction(dev, ntohl(cmd.param));
-			break;
-		case 0x06:
-			tmp = ntohl(cmd.param);
-			printf("set if stage %d gain %d\n", tmp >> 16, (short)(tmp & 0xffff));
-			rtlsdr_set_tuner_if_gain(dev, tmp >> 16, (short)(tmp & 0xffff));
-			break;
-		case 0x07:
-			printf("set test mode %d\n", ntohl(cmd.param));
-			rtlsdr_set_testmode(dev, ntohl(cmd.param));
-			break;
-		case 0x08:
-			printf("set agc mode %d\n", ntohl(cmd.param));
-			rtlsdr_set_agc_mode(dev, ntohl(cmd.param));
-			break;
-		case 0x09:
-			printf("set direct sampling %d\n", ntohl(cmd.param));
-			rtlsdr_set_direct_sampling(dev, ntohl(cmd.param));
-			break;
-		case 0x0a:
-			printf("set offset tuning %d\n", ntohl(cmd.param));
-			rtlsdr_set_offset_tuning(dev, ntohl(cmd.param));
-			break;
-		case 0x0b:
-			printf("set rtl xtal %d\n", ntohl(cmd.param));
-			rtlsdr_set_xtal_freq(dev, ntohl(cmd.param), 0);
-			break;
-		case 0x0c:
-			printf("set tuner xtal %d\n", ntohl(cmd.param));
-			rtlsdr_set_xtal_freq(dev, 0, ntohl(cmd.param));
-			break;
-		case 0x0d:
-			printf("set tuner gain by index %d\n", ntohl(cmd.param));
-			set_gain_by_index(dev, ntohl(cmd.param));
-			break;
-		}
-		cmd.cmd = 0xff;
-	}
-}
-
 int main(int argc, char **argv)
 {
 	int r, opt, i;
-	char* addr = "127.0.0.1";
-	int port = 1234;
 	uint32_t frequency = 100000000, samp_rate = 2048000;
 	struct sockaddr_in local, remote;
 	int device_count;
@@ -482,8 +443,6 @@ int main(int argc, char **argv)
 	void *status;
 	struct timeval tv = {1,0};
 	struct linger ling = {1,0};
-	SOCKET listensocket;
-	socklen_t rlen;
 	fd_set readfds;
 	u_long blockmode = 1;
 	dongle_info_t dongle_info;
@@ -494,7 +453,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact, sigign;
 #endif
 
-	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:n:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "f:g:s:b:n:d:y:z:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -508,12 +467,6 @@ int main(int argc, char **argv)
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
 			break;
-		case 'a':
-			addr = optarg;
-			break;
-		case 'p':
-			port = atoi(optarg);
-			break;
 		case 'b':
 			buf_num = atoi(optarg);
 			break;
@@ -521,6 +474,18 @@ int main(int argc, char **argv)
 			llbuf_num = atoi(optarg);
 			printf("Max buffers set to: %d\n", llbuf_num);
 			break;
+        case 'y':
+            desiredFreqLow = (uint32_t) atoi(optarg);
+            printf("Setting lower bound of fft window %iHz\n", desiredFreqLow);
+            break;
+        case 'x':
+            desiredFFTPoints = (long unsigned int) atoi(optarg);
+            printf("Number of points for each FFT: %lu", desiredFFTPoints);
+            break;
+        case 'z':
+            desiredFreqHigh = (uint32_t) atoi(optarg);
+            printf("Setting lower bound of fft window %iHz\n", desiredFreqLow);
+            break;
 		default:
 			usage();
 			break;
@@ -532,7 +497,7 @@ int main(int argc, char **argv)
 
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
-		fprintf(stderr, "No supported devices found.\n");
+		fprintf(stdout, "No supported devices found.\n");
 		exit(1);
 	}
 
@@ -540,7 +505,7 @@ int main(int argc, char **argv)
 
 	rtlsdr_open(&dev, dev_index);
 	if (NULL == dev) {
-	fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+	fprintf(stdout, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
 	}
 
@@ -560,38 +525,77 @@ int main(int argc, char **argv)
 	/* Set the sample rate */
 	r = rtlsdr_set_sample_rate(dev, samp_rate);
 	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+		fprintf(stdout, "WARNING: Failed to set sample rate.\n");
+
+    /* Ducky: Warn of possibly un-optimal FFT sample usage */
+    if ( (desiredFFTPoints % 2) && (desiredFFTPoints % 3) &&
+         (desiredFFTPoints % 5) && (desiredFFTPoints % 7) ) {
+        fprintf(stdout, "WARNING: The number of samples per FFT may not be optimal.  FFTW3 recommends"
+                        " the number of samples fall under one of these rules.\n"
+                        " -N = 2^a\n"
+                        " -N = 3^b\n"
+                        " -N = 5^c\n"
+                        " -N = 7^d\n"
+                        " -N = 11^e || N = 13^f (where e+f is either 0 or 1) **Not sure what this means, this code will not compare N to this specific rule, so you may still get warnings following this recommendation.\n");
+    } //if()
+
+
+    /* Ducky: Calculate requested span, compare to sample rate */
+    calculatedHalfSpan = rtlsdr_get_sample_rate(dev) / 2;
+
+    if (desiredFreqHigh && (desiredFreqHigh > (frequency + calculatedHalfSpan) || desiredFreqHigh < (frequency - calculatedHalfSpan))) {
+        fprintf(stdout, "\nDesired upper bound is outside the output span.\n \
+                         For this setup, the upper bound should fall within: (%f, %f)Hz\n \
+                         Disregarding upper bound request...\n",
+                         frequency-calculatedHalfSpan,
+                         frequency+calculatedHalfSpan);
+        desiredFreqHigh = 0;
+    } //if()
+
+    if (desiredFreqLow && (desiredFreqLow > (frequency + calculatedHalfSpan) || desiredFreqLow < (frequency - calculatedHalfSpan))) {
+        fprintf(stdout, "\nDesired lower bound is outside the output span.\n \
+                         For this setup, the lower bound should fall within: (%f, %f)Hz\n \
+                         Disregarding lower bound request...\n",
+                         frequency-calculatedHalfSpan,
+                         frequency+calculatedHalfSpan);
+        desiredFreqLow = 0;
+    } //if()
+
+    if (!desiredFreqLow && !desiredFreqHigh) {
+        fprintf(stdout, "\nWARNING: No freq window specified, will not search for signal!! Specify with -y & -z params\n");
+    } //if()
 
 	/* Set the frequency */
 	r = rtlsdr_set_center_freq(dev, frequency);
 	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set center freq.\n");
+		fprintf(stdout, "WARNING: Failed to set center freq.\n");
 	else
-		fprintf(stderr, "Tuned to %i Hz.\n", frequency);
+		fprintf(stdout, "Tuned to %i Hz.\n", frequency);
 
 	if (0 == gain) {
 		 /* Enable automatic gain */
 		r = rtlsdr_set_tuner_gain_mode(dev, 0);
+        fprintf(stdout, "Enabling automatic gain...\n");
 		if (r < 0)
-			fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+			fprintf(stdout, "WARNING: Failed to enable automatic gain.\n");
 	} else {
 		/* Enable manual gain */
 		r = rtlsdr_set_tuner_gain_mode(dev, 1);
 		if (r < 0)
-			fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+			fprintf(stdout, "WARNING: Failed to enable manual gain.\n");
 
 		/* Set the tuner gain */
 		r = rtlsdr_set_tuner_gain(dev, gain);
 		if (r < 0)
-			fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+			fprintf(stdout, "WARNING: Failed to set tuner gain.\n");
 		else
-			fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+			fprintf(stdout, "Tuner gain set to %f dB.\n", gain/10.0);
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
 	r = rtlsdr_reset_buffer(dev);
 	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+		fprintf(stdout, "WARNING: Failed to reset buffers.\n");
 
 	pthread_mutex_init(&exit_cond_lock, NULL);
 	pthread_mutex_init(&ll_mutex, NULL);
@@ -599,53 +603,11 @@ int main(int argc, char **argv)
 	pthread_cond_init(&cond, NULL);
 	pthread_cond_init(&exit_cond, NULL);
 
-	memset(&local,0,sizeof(local));
-	local.sin_family = AF_INET;
-	local.sin_port = htons(port);
-	local.sin_addr.s_addr = inet_addr(addr);
-
-	listensocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	r = 1;
-	setsockopt(listensocket, SOL_SOCKET, SO_REUSEADDR, (char *)&r, sizeof(int));
-	setsockopt(listensocket, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(ling));
-	bind(listensocket,(struct sockaddr *)&local,sizeof(local));
-
-#ifdef _WIN32
-	ioctlsocket(listensocket, FIONBIO, &blockmode);
-#else
-	r = fcntl(listensocket, F_GETFL, 0);
-	r = fcntl(listensocket, F_SETFL, r | O_NONBLOCK);
-#endif
-
 	//DUCKY: TOOK OUT WHILE LOOP BECAUSE THE PROGRAM WOULD
 	//	STOP RESPONDING IF IT LOST THE SOCKET
 	//while(1) {
-		printf("listening...\n");
-		printf("Use the device argument 'rtl_tcp=%s:%d' in OsmoSDR "
-		       "(gr-osmosdr) source\n"
-		       "to receive samples in GRC and control "
-		       "rtl_tcp parameters (frequency, gain, ...).\n",
-		       addr, port);
-		listen(listensocket,1);
 
-		while(1) {
-			FD_ZERO(&readfds);
-			FD_SET(listensocket, &readfds);
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-			r = select(listensocket+1, &readfds, NULL, NULL, &tv);
-			if(do_exit) {
-				goto out;
-			} else if(r) {
-				rlen = sizeof(remote);
-				s = accept(listensocket,(struct sockaddr *)&remote, &rlen);
-				break;
-			}
-		}
-
-		setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(ling));
-
-		printf("client accepted!\n");
+        printf("\nSkipping any TCP connection requirement\n");
 
 		memset(&dongle_info, 0, sizeof(dongle_info));
 		memcpy(&dongle_info.magic, "RTL0", 4);
@@ -658,17 +620,8 @@ int main(int argc, char **argv)
 		if (r >= 0)
 			dongle_info.tuner_gain_count = htonl(r);
 
-//TODO: Uncomment this block if needed.  Attempting to see if 
-//	sending this data is irrelevant for octave work
-//		r = send(s, (const char *)&dongle_info, sizeof(dongle_info), 0);
-//		if (sizeof(dongle_info) != r)
-//			printf("failed to send dongle information\n");
-
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-		r = pthread_create(&tcp_worker_thread, &attr, tcp_worker, NULL);
-		r = pthread_create(&command_thread, &attr, command_worker, NULL);
 
 		//Ducky: Added our own FFT
 		r = pthread_create(&ducky_fft_thread, &attr, ducky_fft, NULL);
@@ -677,13 +630,8 @@ int main(int argc, char **argv)
 
 		r = rtlsdr_read_async(dev, rtlsdr_callback, NULL, buf_num, 0);
 
-		pthread_join(tcp_worker_thread, &status);
-		pthread_join(command_thread, &status);
-
 		//Ducky: Added our own FFT
 		pthread_join(ducky_fft_thread, &status);
-
-		closesocket(s);
 
 		printf("all threads dead..\n");
 		curelem = ll_buffers;
@@ -702,8 +650,6 @@ int main(int argc, char **argv)
 
 out:
 	rtlsdr_close(dev);
-	closesocket(listensocket);
-	closesocket(s);
 #ifdef _WIN32
 	WSACleanup();
 #endif
