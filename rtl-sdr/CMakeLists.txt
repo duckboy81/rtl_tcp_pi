@@ -73,6 +73,7 @@ if(NOT THREADS_FOUND)
 endif()
 
 find_package(FFTW REQUIRED)
+find_package(BCM REQUIRED)
 #find_package(GPU_FFT REQUIRED)
 
 ########################################################################

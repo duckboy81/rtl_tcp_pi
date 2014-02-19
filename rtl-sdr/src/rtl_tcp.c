@@ -29,6 +29,8 @@
 #include <math.h>
 #include <time.h>
 #include <fftw3.h>
+#include <bcm2835.h>
+#define PIN RPI_GPIO_P1_11
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -387,6 +389,10 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 		time(&sample1);
 
         while(curelem != 0) {
+	    if (do_exit) {
+		break;
+	    } //if()
+
             bytesleft = curelem->len;
             index = 0;
             bytessent = 0;
@@ -766,6 +772,25 @@ int main(int argc, char **argv)
 	//while(1) {
 
         printf("\nSkipping any TCP connection requirement\n");
+
+		printf("\nInitializing GPIO pins (bcm2835)");
+		if (!bcm2835_init()) {
+			printf("\nCould not initialize bcm2835!!");
+			return 1;
+		} //if()
+
+		bcm2835_gpio_fsel(PIN, BCM2835_GPIO_FSEL_OUTP);
+		printf("\n");
+
+		while(1) {
+			printf("\nSetting PIN 11 HIGH");
+			bcm2835_gpio_write(PIN, HIGH);
+			bcm2835_delay(1000);
+			printf("\nSetting PIN 11 LOW");
+			bcm2835_gpio_write(PIN, LOW);
+			bcm2835_delay(1000);
+		} //while()
+
 
 		memset(&dongle_info, 0, sizeof(dongle_info));
 		memcpy(&dongle_info.magic, "RTL0", 4);

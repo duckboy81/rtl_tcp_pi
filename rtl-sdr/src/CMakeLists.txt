@@ -21,16 +21,6 @@
 # Setup library
 ########################################################################
 
-#Some stuff
-#OPTION(BUILD_SHARED_LIBS TRUE)
-
-#Build GPU_FFT
-#add_subdirectory(gpu_fft)
-
-#Include GPU_FFT
-#include_directories("/home/pi/rtl-sdr/src/gpu_fft")
-#link_directories("/home/pi/rtl-sdr/src/gpu_fft")
-
 add_library(rtlsdr_shared SHARED
     librtlsdr.c
     tuner_e4k.c
@@ -38,12 +28,6 @@ add_library(rtlsdr_shared SHARED
     tuner_fc0013.c
     tuner_fc2580.c
     tuner_r82xx.c
-#    gpu_fft/mailbox.c
-#    gpu_fft/gpu_fft.c
-#    gpu_fft/mailbox.h
-#    gpu_fft/gpu_fft.h
-#    gpu_fft/gpu_fft_twiddles.c
-#    gpu_fft/gpu_fft_shaders.c
 )
 
 target_link_libraries(rtlsdr_shared
@@ -62,12 +46,6 @@ add_library(rtlsdr_static STATIC
     tuner_fc0013.c
     tuner_fc2580.c
     tuner_r82xx.c
-#    gpu_fft/mailbox.h
-#    gpu_fft/gpu_fft.h
-#    gpu_fft/mailbox.c
-#    gpu_fft/gpu_fft.c
-#    gpu_fft/gpu_fft_twiddles.c
-#    gpu_fft/gpu_fft_shaders.c
 )
 
 if(WIN32)
@@ -129,9 +107,7 @@ target_link_libraries(rtl_power rtlsdr_shared
 )
 
 target_link_libraries(rtl_tcp ${FFTW_LIBRARIES})
-
-#target_link_libraries(rtlsdr_shared gpu_fft)
-#target_link_libraries(rtl_tcp GPU_FFT_LIBRARIES)
+target_link_libraries(rtl_tcp ${BCM_LIBRARIES})
 
 if(UNIX)
 target_link_libraries(rtl_fm m)
