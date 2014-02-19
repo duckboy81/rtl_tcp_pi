@@ -77,6 +77,11 @@ static rtlsdr_dev_t *dev = NULL;
 uint32_t desiredFreqLow = 0;
 uint32_t desiredFreqHigh = 0;
 long unsigned int desiredFFTPoints = (16 * 32 * 512); //This is the def length of each buffer from rtllib
+
+uint32_t thresholdFreqLow = 0;
+uint32_t thresholdFreqHigh = 0;
+double threshold_buffer = 0.5;
+
 double calculatedHalfSpan = 0;
 
 int global_numq = 0;
@@ -87,7 +92,8 @@ static volatile int do_exit = 0;
 
 void usage(void)
 {
-	printf("rtl_tcp, an I/Q spectrum server for RTL2832 based DVB-T receivers\n\n"
+	printf("rtl_tcp, an I/Q spectrum server for RTL2832 based DVB-T receivers. Can detect spikes in signals in certain freq window.\n"
+		"Will ignore \"DC Spike\" by dropping first few FFT ouput values to 0.\n\n"
 		"Usage:\n"
 		"\t[-f frequency to tune to [Hz]]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
@@ -95,6 +101,9 @@ void usage(void)
 		"\t[-b number of buffers (default: 32, set by library)]\n"
 		"\t[-n max number of linked list buffers to keep (default: 500)]\n"
 		"\t[-d device index (default: 0)]\n"
+		"\t[-u Sets the buffer to add to the dynamic buffer when determining a detection (default: 0.5) [db?]]"
+		"\t[-v Lower bound of theshold window [Hz] (must be specified if using -y/-z)]"
+		"\t[-w Upper bound of theshold window [Hz] (must be specified if using -y/-z]"
         "\t[-x The number of data points to use for each FFT (default: 2^18)]\n"
         "\t FFTW recommends you set N to one of the following:\n"
         "\t  -N = 2^a\n"
@@ -228,7 +237,7 @@ static void *ducky_fft(void *arg)
     //Ducky: variables for fftw (pulled from fftw3_doc)
     fftw_complex *in, *out;
     fftw_plan p;
-    double curr_output[desiredFFTPoints];
+    double curr_output[desiredFFTPoints], max_value_threshold;
     long unsigned int i,j, curr_data_point = 0;
 
     //Ducky: Filter results to narrow band
@@ -236,31 +245,66 @@ static void *ducky_fft(void *arg)
     uint32_t span = rtlsdr_get_sample_rate(dev);
     uint32_t lowerBound = tunedFreqCenter - span/2;
 
+	//TODO: Remove this test code
+	double max_value_difference = 0;
+	time_t sample1;
+	time_t sample2;
+	time_t sample3;
+	time_t sample4;
+	time_t sample5;
+	time_t sample6;
+	time_t sample7;
+	time_t sample8;
+
+	//Convert dB to a decimal value
+	threshold_buffer = pow(10, threshold_buffer);
+
     //Calculate upper/lower array bounds
     //Calculations derived on page 41 of Ducky's notebook
     //Attempts to add 3% buffer edge to each side
-    long double lower_pos_temp = 0;
-    long double upper_pos_temp = 0;
+    long double pos_temp = 0;
+
     unsigned long int lower_pos = 0;
     unsigned long int upper_pos = desiredFFTPoints - 1;
 
-    if (desiredFreqLow != 0) {
-        lower_pos_temp = desiredFreqLow - lowerBound;
-        lower_pos_temp = lower_pos_temp/span;
-        lower_pos_temp = lower_pos_temp * desiredFFTPoints;
-        lower_pos_temp = lower_pos_temp - 0.03*desiredFFTPoints;
+	unsigned long int threshold_lower_pos = 0;
+	unsigned long int threshold_upper_pos = desiredFFTPoints - 1;
 
-        lower_pos = (unsigned long int) lower_pos_temp;
+    if (desiredFreqLow != 0) {
+        pos_temp = desiredFreqLow - lowerBound;
+        pos_temp = pos_temp/span;
+        pos_temp = pos_temp * desiredFFTPoints;
+        pos_temp = pos_temp - 0.03*desiredFFTPoints;
+
+        lower_pos = (unsigned long int) pos_temp;
     } //if()
 
     if (desiredFreqHigh != 0) {
-        upper_pos_temp = desiredFreqHigh - lowerBound;
-        upper_pos_temp = upper_pos_temp/span;
-        upper_pos_temp = upper_pos_temp * desiredFFTPoints;
-        upper_pos_temp = upper_pos_temp + 0.03*desiredFFTPoints;
+        pos_temp = desiredFreqHigh - lowerBound;
+        pos_temp = pos_temp/span;
+        pos_temp = pos_temp * desiredFFTPoints;
+        pos_temp = pos_temp + 0.03*desiredFFTPoints;
 
-        upper_pos = (unsigned long int) upper_pos_temp;
+        upper_pos = (unsigned long int) pos_temp;
     } //if()
+
+	if (thresholdFreqLow != 0) {
+        pos_temp = thresholdFreqLow - lowerBound;
+        pos_temp = pos_temp/span;
+        pos_temp = pos_temp * desiredFFTPoints;
+        pos_temp = pos_temp - 0.03*desiredFFTPoints;
+
+        threshold_lower_pos = (unsigned long int) pos_temp;
+	} //if()
+
+	if (thresholdFreqHigh != 0) {
+        pos_temp = thresholdFreqHigh - lowerBound;
+        pos_temp = pos_temp/span;
+        pos_temp = pos_temp * desiredFFTPoints;
+        pos_temp = pos_temp + 0.03*desiredFFTPoints;
+
+        threshold_upper_pos = (unsigned long int) pos_temp;
+	} //if()
 
     //Check for out of array
     if (lower_pos > desiredFFTPoints - 1) {
@@ -272,14 +316,28 @@ static void *ducky_fft(void *arg)
         upper_pos = desiredFFTPoints - 1;
     } //if()
 
+    //Check for out of array
+    if (threshold_lower_pos > desiredFFTPoints - 1) {
+        threshold_lower_pos = desiredFFTPoints - 1;
+    } //if()
+
+    //Check for out of array
+    if (threshold_upper_pos > desiredFFTPoints - 1) {
+        threshold_upper_pos = desiredFFTPoints - 1;
+    } //if()
+
+
 printf("\nf0: %u\n", tunedFreqCenter);
 printf("span: %u\n", span);
 printf("lower_pos: %lu\n", lower_pos);
 printf("upper_pos: %lu\n", upper_pos);
+printf("threshold_lower_pos: %lu\n", threshold_lower_pos);
+printf("threshold_upper_pos: %lu\n", threshold_upper_pos);
 printf("desiredFreqP: %lu\n", desiredFFTPoints);
 printf("desiredFreqH: %u\n", desiredFreqHigh);
 printf("desiredFreqL: %u\n\n", desiredFreqLow);
 
+	//TODO: REMOVE THIS!
 //    FILE *sample_file = fopen("/home/pi/sample_data_new.txt", "w");
     FILE *test_file = fopen("/home/pi/fft_output.txt", "w");
 
@@ -290,27 +348,43 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
     out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * desiredFFTPoints);
     p = fftw_plan_dft_1d(desiredFFTPoints, in, out, FFTW_FORWARD, FFTW_MEASURE);
 
-    while(!do_exit) {
+
+    int mutex_lock_check = 0;
+    struct timespec abs_time; \
+
+	while(!do_exit) {
 		//if (do_exit) {
         //    sighandler(0);
 		//	pthread_exit(NULL);
 		//} //if()
+		do {
+//                    clock_gettime(CLOCK_REALTIME , &abs_time);
+//		    abs_time.tv_sec += 5;
 
-		pthread_mutex_lock(&ll_mutex);
-		gettimeofday(&tp, NULL);
-		ts.tv_sec = tp.tv_sec + 5;
-		ts.tv_nsec = tp.tv_usec * 1000;
-		r = pthread_cond_timedwait(&cond, &ll_mutex, &ts);
-		if (r == ETIMEDOUT) {
-			pthread_mutex_unlock(&ll_mutex);
-			printf("fft worker condition timeout\n");
-			sighandler(0);
-			pthread_exit(NULL);
-        } //if()
+//		    mutex_lock_check = pthread_mutex_timedlock(&ll_mutex, &abs_time);
+		    mutex_lock_check = pthread_mutex_lock(&ll_mutex);
+
+		    if (do_exit) {
+			break;
+		    } //if()
+		} while(mutex_lock_check != 0);
+		//gettimeofday(&tp, NULL);
+		//ts.tv_sec = tp.tv_sec + 5;
+		//ts.tv_nsec = tp.tv_usec * 1000;
+		//r = pthread_cond_timedwait(&cond, &ll_mutex, &ts);
+		//if (r == ETIMEDOUT) {
+		//	pthread_mutex_unlock(&ll_mutex);
+		//	printf("fft worker condition timeout\n");
+		//	sighandler(0);
+		//	pthread_exit(NULL);
+        //} //if()
 
 		curelem = ll_buffers;
 		ll_buffers = 0;
 		pthread_mutex_unlock(&ll_mutex);
+
+//		printf("\nPutting samples into FFT array\n");
+		time(&sample1);
 
         while(curelem != 0) {
             bytesleft = curelem->len;
@@ -329,19 +403,25 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
                 //Is it time to crunch FFTs yet?
                 if (curr_data_point >= desiredFFTPoints) {
 
+					time(&sample2);
+
                     //Reset variable to reuse it
                     curr_data_point = 0;
 
                     //This is a test to see if this function if a blocking function
-                    fprintf(stdout, "\nHello, I'm about to start crunching FFTs!\n");
+                    fprintf(stdout, "\nCruncing FFT...!\n");
+					time(&sample3);
                     fftw_execute(p); //Repeat as needed
-                    fprintf(stdout, "I just crunched the ffts!\n");
+					time(&sample4);
+                    fprintf(stdout, "...finished crunching!\n");
 
                     //Need to FFTShift manually!
                     //Calculate magnitude of results (combine im with real)
                     //abs() converts values to positive numbers
                     //sqrt() find the magnitude of the real+complex combined
                     //pow() helps to pull the signal out of the noise
+					printf("FFT Shifting\n");
+					time(&sample5);
                     for(i=desiredFFTPoints/2; i < desiredFFTPoints; i++) {
                         curr_output[curr_data_point] = pow(
                                             sqrt(
@@ -362,12 +442,35 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
                         curr_data_point++;
                     } //for()
 
-                    //Check window for signal
-                    if (desiredFreqLow != 0 || desiredFreqHigh != 0) {
-                        for(i=lower_pos; i<upper_pos; i++) {
+					//Ignore first 5 output data points (get rid of the "DC Spike" or so I know it as)
+					for(i=0; i<5; i++) { curr_output[i] = 0; }
 
-                            //Try out 10^8 as threshold
-                            if (curr_output[i] > 100000000) {
+					time(&sample6);
+
+					//Get max signal in threshold
+					max_value_threshold = 0;
+					max_value_difference = 0.0; //TODO: REMOVE THIS
+					if (thresholdFreqLow != 0 || thresholdFreqHigh != 0) {
+						for(i=threshold_lower_pos; i<threshold_upper_pos; i++) {
+							if (curr_output[i] > max_value_threshold) {
+								max_value_threshold = curr_output[i];
+							} //if()
+						} //for()
+					} //if()
+
+					time(&sample7);
+
+                    //Check window for signal
+                    if (max_value_threshold > 0) {
+                        for(i=lower_pos; i<upper_pos; i++) {
+							//TODO: Remove this if-block
+							if (curr_output[i] / max_value_threshold > max_value_difference) {
+								max_value_difference = curr_output[i] / max_value_threshold;
+							} //if()
+
+							//Note: threshold_buffer is converted to decimal value earlier in this function
+//                            if (curr_output[i] > max_value_threshold + threshold_buffer)
+                            if (curr_output[i] / max_value_threshold > threshold_buffer) {
                                 do_exit = 1;
 
                                 fprintf(stdout, "*** I see a signal! ***\n");
@@ -378,12 +481,16 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
                                     fprintf(test_file, "%f,", curr_output[i]);
                                 } //for()
 
-                                fprintf(stdout, "...done\n\nGoodbye!");
+                                fprintf(stdout, "...done\n\nGoodbye!\n\n");
 
                                 exit(0);
                             } //if()
                         } //for()
+						printf("Max SNR (output/threshold): %f\n", max_value_difference);
+						printf("Max SNR log10(output/threshold): %f\n", log10(max_value_difference));
                     } //if()
+
+					time(&sample8);
 
                     //Reset variables
                     curr_data_point = 0;
@@ -398,6 +505,14 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
             free(prev->data);
             free(prev);
         } //while(we have not reached the end of the buffer)
+/*
+		printf("\n***** Time log! *****\n");
+		printf("-Inputing samples into FFT array: %f (ms)\n", difftime(sample2, sample1) * 1000);
+		printf("-Crunching FFT: %f (ms)\n", difftime(sample4, sample3) * 1000);
+		printf("-FFT Shift: %f (ms)\n", difftime(sample6, sample5) * 1000);
+		printf("-Threshold find: %f (ms)\n", difftime(sample7, sample6) * 1000);
+		printf("-Above threshold comparisons: %f (ms)\n", difftime(sample8, sample7) * 1000);
+*/
 	} //while()
 
 //    fclose(sample_file);
@@ -453,7 +568,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact, sigign;
 #endif
 
-	while ((opt = getopt(argc, argv, "f:g:s:b:n:d:y:z:")) != -1) {
+	while ((opt = getopt(argc, argv, "f:g:s:b:n:d:v:w:u:y:z:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -474,6 +589,15 @@ int main(int argc, char **argv)
 			llbuf_num = atoi(optarg);
 			printf("Max buffers set to: %d\n", llbuf_num);
 			break;
+		case 'v':
+			thresholdFreqLow = (uint32_t) atoi(optarg);
+			break;
+		case 'w':
+			thresholdFreqHigh = (uint32_t) atoi(optarg);
+			break;
+		case 'u':
+			threshold_buffer = (double) atof(optarg);
+			break;
         case 'y':
             desiredFreqLow = (uint32_t) atoi(optarg);
             printf("Setting lower bound of fft window %iHz\n", desiredFreqLow);
@@ -484,7 +608,7 @@ int main(int argc, char **argv)
             break;
         case 'z':
             desiredFreqHigh = (uint32_t) atoi(optarg);
-            printf("Setting lower bound of fft window %iHz\n", desiredFreqLow);
+            printf("Setting upper bound of fft window %iHz\n", desiredFreqHigh);
             break;
 		default:
 			usage();
@@ -502,6 +626,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("Found %d device(s).\n", device_count);
+	printf("Threshold buffer is 10^%f\n", threshold_buffer);
 
 	rtlsdr_open(&dev, dev_index);
 	if (NULL == dev) {
@@ -544,7 +669,7 @@ int main(int argc, char **argv)
     calculatedHalfSpan = rtlsdr_get_sample_rate(dev) / 2;
 
     if (desiredFreqHigh && (desiredFreqHigh > (frequency + calculatedHalfSpan) || desiredFreqHigh < (frequency - calculatedHalfSpan))) {
-        fprintf(stdout, "\nDesired upper bound is outside the output span.\n \
+        fprintf(stdout, "Desired upper bound is outside the output span.\n \
                          For this setup, the upper bound should fall within: (%f, %f)Hz\n \
                          Disregarding upper bound request...\n",
                          frequency-calculatedHalfSpan,
@@ -553,7 +678,7 @@ int main(int argc, char **argv)
     } //if()
 
     if (desiredFreqLow && (desiredFreqLow > (frequency + calculatedHalfSpan) || desiredFreqLow < (frequency - calculatedHalfSpan))) {
-        fprintf(stdout, "\nDesired lower bound is outside the output span.\n \
+        fprintf(stdout, "Desired lower bound is outside the output span.\n \
                          For this setup, the lower bound should fall within: (%f, %f)Hz\n \
                          Disregarding lower bound request...\n",
                          frequency-calculatedHalfSpan,
@@ -561,9 +686,42 @@ int main(int argc, char **argv)
         desiredFreqLow = 0;
     } //if()
 
-    if (!desiredFreqLow && !desiredFreqHigh) {
-        fprintf(stdout, "\nWARNING: No freq window specified, will not search for signal!! Specify with -y & -z params\n");
+    if (thresholdFreqLow && (thresholdFreqLow > (frequency + calculatedHalfSpan) || thresholdFreqLow < (frequency - calculatedHalfSpan))) {
+        fprintf(stdout, "Desired threshold lower bound is outside the output span.\n \
+                         For this setup, the threshold lower bound should fall within: (%f, %f)Hz\n \
+                         Disregarding threshold lower bound request...\n",
+                         frequency-calculatedHalfSpan,
+                         frequency+calculatedHalfSpan);
+        thresholdFreqLow = 0;
     } //if()
+
+    if (thresholdFreqHigh && (thresholdFreqHigh > (frequency + calculatedHalfSpan) || thresholdFreqHigh < (frequency - calculatedHalfSpan))) {
+        fprintf(stdout, "Desired threshold upper bound is outside the output span.\n \
+                         For this setup, the threshold upper bound should fall within: (%f, %f)Hz\n \
+                         Disregarding threshold upper bound request...\n",
+                         frequency-calculatedHalfSpan,
+                         frequency+calculatedHalfSpan);
+        thresholdFreqHigh = 0;
+    } //if()
+
+    if (!desiredFreqLow && !desiredFreqHigh) {
+        fprintf(stdout, "WARNING: No freq window specified, will not search for signal!! Specify with -y & -z params\n");
+    } //if()
+
+
+	//Check for proper threshold window
+	if ((desiredFreqLow || desiredFreqHigh) &&
+		!(thresholdFreqHigh < desiredFreqLow) &&
+		!(desiredFreqHigh < thresholdFreqLow)) {
+		fprintf(stdout, "WARNING: Your FFT window overlaps with your threshold window\n");
+	} //if()
+
+	//Check to see if threshold window was even set
+	if ((desiredFreqLow || desiredFreqHigh) && !thresholdFreqLow && !thresholdFreqHigh) {
+		fprintf(stdout, "WARNING: You specified an FFT window, but failed to specify a threshold window.  No detection algorithm will run\n");
+	} //if()
+
+
 
 	/* Set the frequency */
 	r = rtlsdr_set_center_freq(dev, frequency);
