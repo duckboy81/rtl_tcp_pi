@@ -30,7 +30,17 @@
 #include <time.h>
 #include <fftw3.h>
 #include <bcm2835.h>
-#define PIN RPI_GPIO_P1_11
+
+//Definitions to make it easier to program GPIO Pins
+//	may add more if desired... see bcm2835.h
+#define PIN03 RPI_GPIO_P1_03
+#define PIN05 RPI_GPIO_P1_05
+#define PIN07 RPI_GPIO_P1_07
+#define PIN08 RPI_GPIO_P1_08
+#define PIN10 RPI_GPIO_P1_10
+#define PIN11 RPI_GPIO_P1_11
+
+#define DETECTION_PIN PIN11
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -156,6 +166,9 @@ static void sighandler(int signum)
 {
 	fprintf(stdout, "Signal caught, exiting!\n");
 	rtlsdr_cancel_async(dev);
+	bcm2835_gpio_clr(DETECTION_PIN);
+	bcm2835_gpio_fsel(DETECTION_PIN, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_close();
 	do_exit++;
 
     if (do_exit == 2) {
@@ -341,7 +354,7 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 
 	//TODO: REMOVE THIS!
 //    FILE *sample_file = fopen("/home/pi/sample_data_new.txt", "w");
-    FILE *test_file = fopen("/home/pi/fft_output.txt", "w");
+//    FILE *test_file = fopen("/home/pi/fft_output.txt", "w");
 
 	printf("\nAbout to enter ducky land!\n");
 
@@ -352,7 +365,13 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 
 
     int mutex_lock_check = 0;
-    struct timespec abs_time; \
+    struct timespec abs_time;
+
+
+	printf("\nInitializing DETECTION_PIN to LOW!");
+	//bcm2835_gpio_write(DETECTION_PIN, LOW);
+	bcm2835_gpio_fsel(DETECTION_PIN, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_write(DETECTION_PIN, LOW);
 
 	while(!do_exit) {
 		//if (do_exit) {
@@ -360,11 +379,11 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 		//	pthread_exit(NULL);
 		//} //if()
 		do {
-//                    clock_gettime(CLOCK_REALTIME , &abs_time);
-//		    abs_time.tv_sec += 5;
+            clock_gettime(CLOCK_REALTIME , &abs_time);
+		    abs_time.tv_sec += 5;
 
-//		    mutex_lock_check = pthread_mutex_timedlock(&ll_mutex, &abs_time);
-		    mutex_lock_check = pthread_mutex_lock(&ll_mutex);
+		    mutex_lock_check = pthread_mutex_timedlock(&ll_mutex, &abs_time);
+//		    mutex_lock_check = pthread_mutex_lock(&ll_mutex);
 
 		    if (do_exit) {
 			break;
@@ -386,7 +405,7 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 		pthread_mutex_unlock(&ll_mutex);
 
 //		printf("\nPutting samples into FFT array\n");
-		time(&sample1);
+//		time(&sample1);
 
         while(curelem != 0) {
 	    if (do_exit) {
@@ -409,16 +428,16 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
                 //Is it time to crunch FFTs yet?
                 if (curr_data_point >= desiredFFTPoints) {
 
-					time(&sample2);
+//					time(&sample2);
 
                     //Reset variable to reuse it
                     curr_data_point = 0;
 
                     //This is a test to see if this function if a blocking function
                     fprintf(stdout, "\nCruncing FFT...!\n");
-					time(&sample3);
+//					time(&sample3);
                     fftw_execute(p); //Repeat as needed
-					time(&sample4);
+//					time(&sample4);
                     fprintf(stdout, "...finished crunching!\n");
 
                     //Need to FFTShift manually!
@@ -427,7 +446,7 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
                     //sqrt() find the magnitude of the real+complex combined
                     //pow() helps to pull the signal out of the noise
 					printf("FFT Shifting\n");
-					time(&sample5);
+//					time(&sample5);
                     for(i=desiredFFTPoints/2; i < desiredFFTPoints; i++) {
                         curr_output[curr_data_point] = pow(
                                             sqrt(
@@ -451,11 +470,11 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 					//Ignore first 5 output data points (get rid of the "DC Spike" or so I know it as)
 					for(i=0; i<5; i++) { curr_output[i] = 0; }
 
-					time(&sample6);
+//					time(&sample6);
 
 					//Get max signal in threshold
 					max_value_threshold = 0;
-					max_value_difference = 0.0; //TODO: REMOVE THIS
+					max_value_difference = 0.0; //TODO: REMOVE THIS (USED FOR TESTING)
 					if (thresholdFreqLow != 0 || thresholdFreqHigh != 0) {
 						for(i=threshold_lower_pos; i<threshold_upper_pos; i++) {
 							if (curr_output[i] > max_value_threshold) {
@@ -464,12 +483,12 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 						} //for()
 					} //if()
 
-					time(&sample7);
-
+//					time(&sample7);
+					printf("Checking window for spike.\n");
                     //Check window for signal
                     if (max_value_threshold > 0) {
                         for(i=lower_pos; i<upper_pos; i++) {
-							//TODO: Remove this if-block
+							//TODO: Used for testing -- seeing what the max value difference was...
 							if (curr_output[i] / max_value_threshold > max_value_difference) {
 								max_value_difference = curr_output[i] / max_value_threshold;
 							} //if()
@@ -477,26 +496,40 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 							//Note: threshold_buffer is converted to decimal value earlier in this function
 //                            if (curr_output[i] > max_value_threshold + threshold_buffer)
                             if (curr_output[i] / max_value_threshold > threshold_buffer) {
-                                do_exit = 1;
+                                //do_exit = 1;
 
                                 fprintf(stdout, "*** I see a signal! ***\n");
-                                fprintf(stdout, "\nPrinting data to file...\n");
 
+								//Ensures uController sees the pulse (~0.1 ms delay)
+								if (bcm2835_gpio_lev(DETECTION_PIN) == HIGH) {
+									bcm2835_gpio_write(DETECTION_PIN, LOW);
+									bcm2835_delayMicroseconds(90);
+								} //if()
+
+								printf("Setting DETECTION_PIN HIGH\n");
+								bcm2835_gpio_write(DETECTION_PIN, HIGH);
+								//bcm2835_delay(1000);
+
+                                //fprintf(stdout, "\nPrinting data to file...\n");
                                 //For testing -> Print ffts to a file
-                                for(i=0; i < desiredFFTPoints; i++) {
-                                    fprintf(test_file, "%f,", curr_output[i]);
-                                } //for()
-
-                                fprintf(stdout, "...done\n\nGoodbye!\n\n");
-
-                                exit(0);
-                            } //if()
+                                //for(i=0; i < desiredFFTPoints; i++) {
+                                //    fprintf(test_file, "%f,", curr_output[i]);
+                                //} //for()
+                                //fprintf(stdout, "...done\n\nGoodbye!\n\n");
+                                //exit(0);
+								break;
+                            } else {
+								if (bcm2835_gpio_lev(DETECTION_PIN) != LOW) {
+									printf("Setting DETECTION_PIN LOW\n");
+									bcm2835_gpio_write(DETECTION_PIN, LOW);
+								} //if()
+							} //if-else()
                         } //for()
-						printf("Max SNR (output/threshold): %f\n", max_value_difference);
+						//printf("Max SNR (output/threshold): %f\n", max_value_difference);
 						printf("Max SNR log10(output/threshold): %f\n", log10(max_value_difference));
                     } //if()
 
-					time(&sample8);
+//					time(&sample8);
 
                     //Reset variables
                     curr_data_point = 0;
@@ -522,7 +555,7 @@ printf("desiredFreqL: %u\n\n", desiredFreqLow);
 	} //while()
 
 //    fclose(sample_file);
-    fclose(test_file);
+//    fclose(test_file);
 
     fftw_destroy_plan(p);
     fftw_free(in);
@@ -773,24 +806,11 @@ int main(int argc, char **argv)
 
         printf("\nSkipping any TCP connection requirement\n");
 
-		printf("\nInitializing GPIO pins (bcm2835)");
+		printf("\nInitializing GPIO pin library (bcm2835)");
 		if (!bcm2835_init()) {
 			printf("\nCould not initialize bcm2835!!");
 			return 1;
 		} //if()
-
-		bcm2835_gpio_fsel(PIN, BCM2835_GPIO_FSEL_OUTP);
-		printf("\n");
-
-		while(1) {
-			printf("\nSetting PIN 11 HIGH");
-			bcm2835_gpio_write(PIN, HIGH);
-			bcm2835_delay(1000);
-			printf("\nSetting PIN 11 LOW");
-			bcm2835_gpio_write(PIN, LOW);
-			bcm2835_delay(1000);
-		} //while()
-
 
 		memset(&dongle_info, 0, sizeof(dongle_info));
 		memcpy(&dongle_info.magic, "RTL0", 4);
