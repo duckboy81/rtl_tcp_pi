@@ -41,6 +41,7 @@
 #define PIN11 RPI_GPIO_P1_11
 
 #define DETECTION_PIN PIN11
+#define MAX_BINS_FOR_MEDIAN 100
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -86,6 +87,9 @@ static rtlsdr_dev_t *dev = NULL;
 uint32_t desiredFreqLow = 0;
 uint32_t desiredFreqHigh = 0;
 long unsigned int desiredFFTPoints = (16 * 32 * 512); //This is the def length of each buffer from rtllib
+
+//Ducky: Used for benchmarking
+double max_value_difference_global = 0;
 
 uint32_t thresholdFreqLow = 0;
 uint32_t thresholdFreqHigh = 0;
@@ -165,6 +169,7 @@ sighandler(int signum)
 static void sighandler(int signum)
 {
 	fprintf(stdout, "Signal caught, exiting!\n");
+	fprintf(stdout, "Max value difference global log10(output/threshold): %f\n", max_value_difference_global);
 	rtlsdr_cancel_async(dev);
 	bcm2835_gpio_clr(DETECTION_PIN);
 	bcm2835_gpio_fsel(DETECTION_PIN, BCM2835_GPIO_FSEL_INPT);
@@ -254,9 +259,10 @@ static void *ducky_fft(void *arg)
     //Ducky: variables for fftw (pulled from fftw3_doc)
     fftw_complex *in, *out;
     fftw_plan p;
-    double curr_output[desiredFFTPoints], max_value_threshold, max_value_threshold_avg;
-	double old_samples[desiredFFTPoints][2];
-    long unsigned int i,j, curr_data_point = 0;
+    double curr_output[desiredFFTPoints], max_value_threshold, threshold_array[MAX_BINS_FOR_MEDIAN + 1];
+	long double sum_threshold_maxes;
+	double old_fft[desiredFFTPoints][2];
+    long unsigned int i,j, curr_data_point = 0, curr_max_threshold = 0, threshold_array_transition = 0;
 
     //Ducky: Filter results to narrow band
     uint32_t tunedFreqCenter = rtlsdr_get_center_freq(dev);
@@ -428,18 +434,18 @@ double quickMin = 999;
             for(j=1; j < curelem->len; j=j+2) {
 
 				//Subtract 128 to ensure data is centered on 0
-				if (enable_averaging) {
-	                in[curr_data_point][0] = (curelem->data[j-1] - 128) + old_samples[curr_data_point][0];
-	                in[curr_data_point][1] = (curelem->data[j] - 128) + old_samples[curr_data_point][1];
-				} else {
-    	            in[curr_data_point][0] = (curelem->data[j-1] - 128);
-        	        in[curr_data_point][1] = (curelem->data[j] - 128);
-				}
+				//if (enable_averaging) {
+	            //    in[curr_data_point][0] = (curelem->data[j-1] - 128) + old_samples[curr_data_point][0];
+	            //    in[curr_data_point][1] = (curelem->data[j] - 128) + old_samples[curr_data_point][1];
+				//} else {
+    	        in[curr_data_point][0] = (curelem->data[j-1] - 128);
+        	    in[curr_data_point][1] = (curelem->data[j] - 128);
+				//}
 
 
 				//Copy current data into history
-				old_samples[curr_data_point][0] = curelem->data[j-1] - 128;
-				old_samples[curr_data_point][1] = curelem->data[j] - 128;
+				//old_samples[curr_data_point][0] = curelem->data[j-1] - 128;
+				//old_samples[curr_data_point][1] = curelem->data[j] - 128;
 
 
                 curr_data_point++;
@@ -467,31 +473,66 @@ double quickMin = 999;
 					printf("Calculating Magnitudes while FFT Shifting\n");
 					gettimeofday(&sample5, NULL);
                     for(i=desiredFFTPoints/2; i < desiredFFTPoints; i++) {
-                        curr_output[curr_data_point] = pow(out[i][0], 2) + pow(out[i][1], 2);
+
+						if (enable_averaging) {
+	                        curr_output[curr_data_point] = pow(out[i][0] + old_fft[i][0], 2) + pow(out[i][1] + old_fft[i][1], 2);
+						} else {
+	                        curr_output[curr_data_point] = pow(out[i][0], 2) + pow(out[i][1], 2);
+						} //if-else()
+
+						//Write output to history
+						old_fft[i][0] = out[i][0];
+						old_fft[i][1] = out[i][1];
+
                         curr_data_point++;
                     } //for()
 
                     for(i=0; i < desiredFFTPoints/2; i++) {
-                        curr_output[curr_data_point] = pow(out[i][0], 2) + pow(out[i][1], 2);
+
+						if (enable_averaging) {
+	                        curr_output[curr_data_point] = pow(out[i][0] + old_fft[i][0], 2) + pow(out[i][1] + old_fft[i][1], 2);
+						} else {
+	                        curr_output[curr_data_point] = pow(out[i][0], 2) + pow(out[i][1], 2);
+						} //if-else()
+
+						//Write output to history
+						old_fft[i][0] = out[i][0];
+						old_fft[i][1] = out[i][1];
+
                         curr_data_point++;
                     } //for()
 
 					//Ignore first 5 output data points, now centered (get rid of the "DC Spike" or so I know it as)
-					for(i=desiredFFTPoints/4; i<desiredFFTPoints/4 + 5; i++) { curr_output[i] = 0; }
+					//for(i=desiredFFTPoints/4; i<desiredFFTPoints/4 + 5; i++) { curr_output[i] = 0; }
 
 					gettimeofday(&sample6, NULL);
 
+					printf("Finding average threshold max\n");
+
 					//Get max signal in threshold
-					max_value_threshold = 0;
+					//max_value_threshold = 0;
+					sum_threshold_maxes = 0;
 					max_value_difference = 0.0;
+					curr_max_threshold = 0;
+					threshold_array_transition = (threshold_upper_pos - threshold_lower_pos) / MAX_BINS_FOR_MEDIAN;
 
 					if (thresholdFreqLow != 0 || thresholdFreqHigh != 0) {
 						for(i=threshold_lower_pos; i<threshold_upper_pos; i++) {
-							if (curr_output[i] > max_value_threshold) {
-								max_value_threshold = curr_output[i];
+							if (i > (threshold_array_transition * curr_max_threshold) + threshold_lower_pos) {
+								curr_max_threshold++;
+							} //if()
+
+							if (curr_output[i] > threshold_array[curr_max_threshold]) {
+								threshold_array[curr_max_threshold] = curr_output[i];
 							} //if()
 						} //for()
 					} //if()
+
+					for (i=0; i<curr_max_threshold; i++) {
+						sum_threshold_maxes += threshold_array[i];
+					} //for()
+
+					max_value_threshold = sum_threshold_maxes / curr_max_threshold;
 
 					gettimeofday(&sample7, NULL);
 					printf("Checking window for spike.\n");
@@ -504,7 +545,6 @@ double quickMin = 999;
 							} //if()
 
 							//Note: threshold_buffer is converted to decimal value earlier in this function.
-							//Note: An in-line average is created with old data and this fft
                             if ( curr_output[i] / max_value_threshold > threshold_buffer) {
                                 //do_exit = 1;
 
@@ -520,24 +560,50 @@ double quickMin = 999;
 								bcm2835_gpio_write(DETECTION_PIN, HIGH);
 								//bcm2835_delay(1000);
 
-                                fprintf(stdout, "\nPrinting data to file...\n");
+								//Set to 1 for print to file on detection, 0 for no print to file
+								if (0) {
+									fprintf(stdout, "\nPrinting data to file...\n");
 
-								//Add large spike to signify search bounderies
-								curr_output[lower_pos] = 10000000000000;
-								curr_output[upper_pos] = 10000000000000;
-								curr_output[threshold_lower_pos] = 10000000000000;
-								curr_output[threshold_upper_pos] = 10000000000000;
+									//Add large spike to signify search bounderies
+									curr_output[lower_pos] = 10000000000000;
+									curr_output[upper_pos] = 10000000000000;
+									curr_output[threshold_lower_pos] = 10000000000000;
+									curr_output[threshold_upper_pos] = 10000000000000;
 
-                                //For testing -> Print ffts to a file
-                                for(i=0; i < desiredFFTPoints; i++) {
-                                    fprintf(test_file, "%f,", curr_output[i]);
-                                } //for()
-                                fprintf(stdout, "...done\n\nGoodbye!\n\n");
+                    	            //For testing -> Print ffts to a file
+                        	        for(i=0; i < desiredFFTPoints; i++) {
+                            	        fprintf(test_file, "%f,", curr_output[i]);
+	                                } //for()
+    	                            fprintf(stdout, "...done\n\nGoodbye!\n\n");
 
-                                do_exit = 1;
+        	                        do_exit = 1;
+								} //if()
 
 								//exit(0);
+
 								break;
+/*                            } else if ( curr_output[i] / max_value_threshold < pow(10,-1.0)) { //WHY DOES THIS HAPPEN!?!?!
+
+								//Set to 1 for print to file on detection, 0 for no print to file
+								if (1) {
+									fprintf(stdout, "\nPrinting data to file...\n");
+
+									//Add large spike to signify search bounderies
+									curr_output[lower_pos] = 10000000000000;
+									curr_output[upper_pos] = 10000000000000;
+									curr_output[threshold_lower_pos] = 10000000000000;
+									curr_output[threshold_upper_pos] = 10000000000000;
+
+                    	            //For testing -> Print ffts to a file
+                        	        for(i=0; i < desiredFFTPoints; i++) {
+                            	        fprintf(test_file, "%f,", curr_output[i]);
+	                                } //for()
+    	                            fprintf(stdout, "...done\n\nGoodbye!\n\n");
+
+        	                        do_exit = 1;
+								} //if()
+
+*/
                             } else {
 								if (bcm2835_gpio_lev(DETECTION_PIN) != LOW) {
 									printf("Setting DETECTION_PIN LOW\n");
@@ -546,14 +612,24 @@ double quickMin = 999;
 							} //if-else()
                         } //for()
 
+						//Set to 1 for continual update of max ratio
+						if (1) {
+							if (log10(max_value_difference) > max_value_difference_global) {
+								max_value_difference_global = log10(max_value_difference);
+							} //if()
+						} //if()
 
-		//Clear the console
-		system("clear");
+						//Clear the console
+						system("clear");
 
 						//printf("Max SNR (output/threshold): %f\n", max_value_difference);
 						printf("Max SNR log10(output/threshold): %f\n", log10(max_value_difference));
 						printf("Max SNR log10(output/threshold): %f [i-1]\n", log10(max_value_difference_old));
-                    } //if()
+						printf("Max value difference global log10(output/threshold): %f\n", max_value_difference_global);
+
+                    } else {
+						printf("No threshold! Threshold reported as  <= 0\n");
+					} //if()
 
                     //Reset variables
                     curr_data_point = 0;
@@ -641,11 +717,12 @@ int main(int argc, char **argv)
 	struct sigaction sigact, sigign;
 #endif
 
-	while ((opt = getopt(argc, argv, "a:f:g:s:b:n:d:v:w:u:y:z:")) != -1) {
+	while ((opt = getopt(argc, argv, "a:d:f:g:s:b:n:v:w:u:y:x:z:")) != -1) {
 		switch (opt) {
 		case 'a':
 			enable_averaging = 0;
 			printf("Disabling averaging\n");
+			break;
 		case 'd':
 			dev_index = atoi(optarg);
 			break;
